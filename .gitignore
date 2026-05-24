@@ -1,0 +1,4 @@
+/vendor/
+.history/
+.vscode
+dist/

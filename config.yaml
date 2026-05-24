@@ -1,0 +1,55 @@
+# Edgecase Apparel config file
+
+# K8s node pools
+nodePools:
+  apl:
+    autoscaler:
+      min: 3
+      max: 15
+    count: 3
+    k8sVersion: "1.35"
+    label: ec-app-platform
+    labels:
+      - key: "edgecase-apparel.io/apl"
+        value: "true"
+    tags:
+      - apl
+      - ec-apparel
+    type: g7-dedicated-16-8
+# openbao:
+#   count: 3
+#   k8sVersion: "1.35"
+#   label: ec-openbao
+#   labels:
+#     - key: "edgecase-apparel.io/openbao"
+#       value: "true"
+#   tags:
+#      - openbao
+#      - ec-apparel
+#    type: g8-dedicated-16-8
+
+# K8s clusters
+lkeClusters:
+  primary:  # primary (parent) cluster
+    controlPlane:
+      auditLogs: true
+      highAvailability: true
+    k8sVersion: "1.35"
+    label: edgecase-apparel-main
+    region: us-mia
+    tags:
+      - ec-apparel
+      - prod
+# standby:
+#   controlPlane:
+#     auditLogs: true
+#     highAvailability: true
+#   k8sVersion: "1.35"
+#   label: edgecase-apparel-main
+#   region: us-mia
+#   tags:
+#     - ec-apparel
+#     - test
+#     - dev
+
+# more configs go here...

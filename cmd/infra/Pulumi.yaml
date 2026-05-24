@@ -1,0 +1,12 @@
+name: edgecase-apparel-infra
+description: IaC for Akamai EdgeCase Apparel
+runtime: go
+backend:
+  url: 's3://miami-pulumi-backend?endpoint=us-mia-1.linodeobjects.com&disableSSL=true&s3ForcePathStyle=true&region=us-mia'
+config:
+  linode:objUseTempKeys: true
+  linode:objBucketForceDelete: true
+  pulumi:tags:
+    value:
+      pulumi:template: linode-go
+

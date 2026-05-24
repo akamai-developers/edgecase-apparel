@@ -1,0 +1,4 @@
+* linguist-vendored
+*.go linguist-vendored=false
+*.yml linguist-vendored=false
+*.yaml linguist-vendored=false
