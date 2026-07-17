@@ -1,0 +1,52 @@
+name: CI
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  push:
+    branches:
+      main
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Tag for manual workflow run"
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v7
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: Run formatter
+        uses: flox/activate-action@v1
+        with:
+          command: make go-fmt
+
+      - name: Run linter
+        uses: flox/activate-action@v1
+        with:
+          command: make go-lint
+
+      - name: Run unit tests
+        uses: flox/activate-action@v1
+        with:
+          command: make test-infra
