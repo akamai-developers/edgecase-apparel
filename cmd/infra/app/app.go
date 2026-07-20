@@ -7,6 +7,8 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
+var stackOutputMap = pulumi.Map{}
+
 func Deploy(ctx *pulumi.Context) error {
 	// Get Viper configs
 	if err := InitConfig(); err != nil {
@@ -29,7 +31,7 @@ func Deploy(ctx *pulumi.Context) error {
 	nodeLabels := apl.MapLabels()
 
 	// Create LKE cluster
-	_, err := linode.NewLkeCluster(ctx, lke.Label, &linode.LkeClusterArgs{
+	lkeCluster, err := linode.NewLkeCluster(ctx, lke.Label, &linode.LkeClusterArgs{
 		AplEnabled: pulumi.Bool(false),
 		ControlPlane: &linode.LkeClusterControlPlaneArgs{
 			AuditLogsEnabled: pulumi.Bool(lke.ControlPlane.AuditLogs),
@@ -54,10 +56,14 @@ func Deploy(ctx *pulumi.Context) error {
 		Region: pulumi.String(lke.Region),
 		Tags:   utils.BuildPulumiStringArray(lke.Tags),
 	})
-
 	if err != nil {
 		return err
 	}
+
+	stackOutputMap["lke_id"] = lkeCluster.ID()
+	stackOutputMap["lke_label"] = lkeCluster.Label
+
+	ctx.Export("primary", stackOutputMap)
 
 	return nil
 }
