@@ -1,0 +1,12 @@
+name: edgecase-apparel-infra
+description: IaC for Akamai EdgeCase Apparel
+runtime: go
+backend:
+  url: 'file://./state'
+config:
+  linode:objUseTempKeys: true
+  linode:objBucketForceDelete: true
+  pulumi:tags:
+    value:
+      pulumi:template: linode-go
+
