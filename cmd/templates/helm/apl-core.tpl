@@ -1,23 +1,26 @@
+{{ $apl := .main -}}
+{{ $objKeys := .opts.objKeys -}}
+{{ $objBuckets := .opts.objBuckets -}}
 cluster:
-  name: {{ .PlatformName }}
+  name: {{ $apl.PlatformName }}
   provider: linode
-  domainSuffix: {{ .Domain }}
+  domainSuffix: {{ $apl.Domain }}
 otomi:
   adminPassword: {{ randInitPass }}
   hasExternalDNS: true
 dns:
   domainFilters: 
-    - {{ .Domain }}
+    - {{ $apl.Domain }}
   provider:
     linode:
-      apiToken: {{ .Token }}
+      apiToken: {{ $apl.Token }}
 apps:
   alertmanager:
     enabled: true
   cert-manager:
     issuer: letsencrypt
     stage: production
-    email: admin@{{ .Domain }}
+    email: admin@{{ $apl.Domain }}
   grafana:
     enabled: true
   harbor:
@@ -33,11 +36,11 @@ obj:
   provider:
     type: linode
     linode:
-      region: {{ .Region }}
-      accessKeyId: {{ .accessKey }}
-      secretAccessKey: {{ .secretKey }}
+      region: {{ $apl.Region }}
+      accessKeyId: {{ $objKeys.accessKey }}
+      secretAccessKey: {{ $objKeys.secretKey }}
       buckets:
-        {{- range $key, $value := .objBuckets }}
+        {{- range $key, $value := $objBuckets }}
         {{ $key }}: {{ $value }}
         {{- end }}
 teamConfig:

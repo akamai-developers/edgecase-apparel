@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -10,8 +9,6 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/spf13/viper"
 )
-
-// const infaProject string = "organization/edgecase-apparel-infra"
 
 var AppPlatformOutputs = pulumi.Map{}
 
@@ -50,25 +47,18 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 
 	// Get OBJ key pair from stack reference
 	slug := filepath.Join(stkConf.Project, stkConf.Stack)
-	// st, err := pulumi.NewStackReference(ctx, slug, nil)
-
-	// out, err := st.GetOutputDetails("obj")
-
-	// outputs, err := pulumi.NewStackReference("dns")
-
 	stkRef, err := cfg.StackRefInit(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
 
-	objKeys, err := stkRef.GetMap("obj")
+	objKeys, err := stkRef.Get("obj")
 	if err != nil {
 		return nil, err
 	}
 
-	// Get OBJ bucket lables
-	objBuckets, err := stkRef.GetMap("objBuckets")
-	fmt.Println(objBuckets)
+	// Get OBJ buckets
+	objBuckets, err := stkRef.Get("objBuckets")
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +72,12 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 	apl.Token = viper.GetString("linode.token")
 
 	// Override Helm values
-	values, err := apl.HelmTemplate(objKeys, objBuckets)
+	opts := map[string]any{
+		"objKeys":    objKeys,
+		"objBuckets": objBuckets,
+	}
+
+	values, err := apl.HelmTemplate(opts)
 	if err != nil {
 		return nil, err
 	}

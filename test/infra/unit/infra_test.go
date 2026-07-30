@@ -28,11 +28,6 @@ func (infraMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Pr
 				"domain":        domain,
 				"domain_id":     domain_id,
 			},
-			// "apl": map[string]any{
-			// 	"apl_id":      apl_id,
-			// 	"apl_status":  apl_status,
-			// 	"apl_version": apl_version,
-			// },
 		})
 
 		// Copy inputs and add outputs
@@ -52,20 +47,11 @@ func (infraMocks) Call(args pulumi.MockCallArgs) (resource.PropertyMap, error) {
 	return args.Args, nil
 }
 
-// var ts TestStack
-
 func TestInfraStackOutputs(t *testing.T) {
 	ts := *new(TestStack)
 	ts.Init("infra")
-	// proj := os.Getenv("ECA_INFRA_PROJECT")
-	// stack := os.Getenv("ECA_INFRA_STACK")
-	// fmt.Println(proj)
-	// fmt.Println(stack)
-	// fmt.Printf("\nproj is %s\n", ts.Project)
-	// fmt.Printf("\nstack is %s\n", ts.Stack)
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		// slug := "organization/" + project + "/dev"
 		err := app.Deploy(ctx)
 		assert.NoError(t, err)
 
@@ -106,22 +92,6 @@ func TestInfraStackOutputs(t *testing.T) {
 				t.Error("error: invalid type returned from stack reference")
 			}
 		}()
-
-		// // Test APL specific stack references
-		// go func() {
-		// 	defer wg.Done()
-
-		// 	outputs, err := st.GetOutputDetails("apl")
-		// 	assert.NoError(t, err)
-
-		// 	if values, ok := outputs.Value.(map[string]any); ok {
-		// 		assert.Equal(t, apl_id, values["apl_id"])
-		// 		assert.Equal(t, apl_status, values["apl_status"])
-		// 		assert.Equal(t, apl_version, values["apl_version"])
-		// 	} else {
-		// 		t.Error("error: invalid type returned from stack reference")
-		// 	}
-		// }()
 
 		wg.Wait()
 		return nil

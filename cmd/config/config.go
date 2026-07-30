@@ -12,39 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	// "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/yaml"
 	"github.com/spf13/viper"
-	"go.yaml.in/yaml/v3"
 )
 
 type StackRef struct {
 	Stack *pulumi.StackReference
 }
-
-// type StackRefVal[T any] struct {
-// 	Value T
-// }
-
-// type MyStk[T pulumi.StackReference] struct{
-// 	Stack T
-// }
-
-// type Nah struct {
-// 	Details *pulumi.StackReferenceOutputDetails
-// 	Key     string
-// 	Slug    string
-// 	Stack   *pulumi.StackReference
-// }
-
-// type StackRefData interface {
-// 	*pulumi.StackReference
-// 	// GetMap(string) (map[string]string, error)
-// 	// GetDeets(*pulumi.Context, string) (map[string]string, error)
-// }
-
-// type StackReference[T StackRef] interface {
-// 	Get(string) (T, error)
-// }
 
 type PulumiConfig struct {
 	Context  map[string]string   `mapstructure:"context"`
@@ -57,31 +30,13 @@ type PulumiStackConfig struct {
 	Stack   string `mapstructure:"stack"`
 }
 
-type ObjConfig struct {
-	Buckets map[string]string `mapstructure:"buckets,omitempty"`
-	Keys    map[string]string `mapstructure:"keys,omitempty"`
-	Prefix  string            `mapstructure:"prefix,omitempty"`
-	// Region string            `mapstructure:"region,omitempty"`
-}
-
-// type ObjKeys struct {
-// 	AccessKey string `mapstructure:"accessKey,omitempty"`
-// 	SecretKey string `mapstructure:"secretKey,omitempty"`
-// }
-
 type AplConfig struct {
-	Chart  string `mapstructure:"chart,omitempty"`
-	Domain string `mapstructure:"domain,omitempty"`
-	Name   string `mapstructure:"name,omitempty"`
-	// Obj    struct {
-	// 	Prefix  string   `mapstructure:"prefix,omitempty"`
-	// 	Buckets []string `mapstructure:"buckets,omitempty"`
-	// } `mapstructure:"obj,omitempty"`
-	// Obj    ObjConfig `mapstructure:"obj,omitempty"`
-	// ObjPrefix    string    `mapstructure:"objPrefix,omitempty"`
+	Chart        string `mapstructure:"chart,omitempty"`
+	Domain       string `mapstructure:"domain,omitempty"`
+	Name         string `mapstructure:"name,omitempty"`
 	PlatformName string `mapstructure:"platformName,omitempty"`
 	Repo         string `mapstructure:"repo,omitempty"`
-	Region       string `mapstructure:"repo,omitempty"`
+	Region       string `mapstructure:"region,omitempty"`
 	Token        string `mapstructure:"token,omitempty"`
 	ValuesTpl    string `mapstructure:"valuesTpl,omitempty"`
 	Version      string `mapstructure:"version,omitempty"`
@@ -132,22 +87,37 @@ type HelmConf interface {
 	*AplConfig
 }
 
-func (s *StackRef) GetMap(key string) (map[string]string, error) {
+func (s *StackRef) Get(key string) (any, error) {
 	info, err := s.Stack.GetOutputDetails(key)
 	if err != nil {
 		return nil, err
 	}
 
-	valueMap, err := getMapValue(key, info)
-	if err != nil {
-		return nil, err
+	if info.SecretValue != nil {
+		return info.SecretValue, nil
 	}
 
-	return valueMap, nil
+	return info.Value, nil
 }
 
-func (c *AplConfig) HelmTemplate(opts ...map[string]string) (string, error) {
-	v, err := helmTemplate(c, c.ValuesTpl, opts...)
+func (c *AplConfig) HelmTemplate(opts ...map[string]any) (string, error) {
+	var opt any
+
+	// Merge option maps if more than one was provided
+	switch {
+	case len(opts) > 1:
+		dst := opts[0]
+		for _, i := range opts {
+			maps.Copy(dst, i)
+		}
+		opt = dst
+	case len(opts) == 1:
+		opt = opts[0]
+	default:
+		opt = nil
+	}
+
+	v, err := helmTemplate(c, c.ValuesTpl, opt)
 	return v, err
 }
 
@@ -174,10 +144,6 @@ func (c *NodePoolConfig) MapLabels() map[string]string {
 	return nil
 }
 
-// type helmValueOpts interface {
-// 	map[string]string | map[string]any
-// }
-
 func StackRefInit(ctx *pulumi.Context, slug string) (*StackRef, error) {
 	var stkRef StackRef
 
@@ -191,108 +157,8 @@ func StackRefInit(ctx *pulumi.Context, slug string) (*StackRef, error) {
 	return &stkRef, nil
 }
 
-func getMapValue(key string, info *pulumi.StackReferenceOutputDetails) (map[string]string, error) {
-	var i any
-	m := make(map[string]string)
-
-	if info.Value != nil {
-		i = info.Value
-	} else {
-		i = info.SecretValue
-	}
-
-	switch val := i.(type) {
-	case string:
-		m[key] = val
-		return m, nil
-	case map[string]any:
-		for k, v := range val {
-			if _, ok := v.(string); !ok {
-				err := fmt.Errorf("\n[ error ] map item for %s is not string type\n", key)
-				return nil, err
-			}
-			m[k] = v.(string)
-		}
-		return m, nil
-	default:
-		err := fmt.Errorf("\n[ error ] %s is not string type: %v\n", key, val)
-		return nil, err
-	}
-}
-
-func helmTemplate[T HelmConf](tplData T, tpl string, opts ...map[string]string) (string, error) {
-	var data map[string]string
-
-	// Marshal struct values to yaml []byte string
-	yamlData, err := yaml.Marshal(tplData)
-	if err != nil {
-		fmt.Println("YESYYYYYYYY")
-		return "", err
-	}
-
-	// Unmarshal yaml string to map
-	if err := yaml.Unmarshal(yamlData, &data); err != nil {
-		return "", err
-	}
-
-	// Merge with optional maps
-	if len(opts) > 0 {
-		for _, i := range opts {
-			maps.Copy(data, i)
-		}
-	}
-
-	projRoot, _ := GetProjRoot("helmTemplate()")
-	v := filepath.Join(projRoot, "cmd/templates/helm", tpl)
-
-	funcMap := template.FuncMap{
-		"randInitPass": RandInitPass,
-		"mapValue":     tplMapValue,
-	}
-
-	t := template.Must(template.New(tpl).Funcs(funcMap).ParseFiles(v))
-	buf := &bytes.Buffer{}
-
-	if err := t.Execute(buf, data); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
 func RandInitPass() string {
 	return uuid.NewString()
-}
-
-func tplMapValue(m map[string]string, k string) string {
-	s := m[k]
-	return s
-}
-
-func unmarshalSubkey[T Conf](key string, cfg T) error {
-	var section string
-
-	switch any(cfg).(type) {
-	case *LkeConfig:
-		section = "lkeclusters"
-	case *NodePoolConfig:
-		section = "nodepools"
-	}
-
-	result := viper.GetStringMap(section)
-	_, ok := result[key]
-	if !ok {
-		return fmt.Errorf("viper.GetStringMap error: no data (empty map)")
-	}
-
-	subKey := fmt.Sprintf("%s.%s", section, key)
-	subViper := viper.Sub(subKey)
-
-	if err := subViper.Unmarshal(&cfg); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func InitConfig() error {
@@ -341,4 +207,58 @@ func GetProjRoot(funcName string) (string, error) {
 	projRoot := filepath.Join(dir, "..", "..")
 
 	return projRoot, nil
+}
+
+func helmTemplate[T HelmConf](tplData T, tpl string, opts any) (string, error) {
+	// Make data map for helm values
+	// Assign struct values to "main" and optional value maps to "opts"
+	data := map[string]any{
+		"main": tplData,
+	}
+
+	if opts != nil {
+		data["opts"] = opts
+	}
+
+	projRoot, _ := GetProjRoot("helmTemplate()")
+	v := filepath.Join(projRoot, "cmd/templates/helm", tpl)
+
+	funcMap := template.FuncMap{
+		"randInitPass": RandInitPass,
+	}
+
+	// Execute template against the final data map
+	t := template.Must(template.New(tpl).Funcs(funcMap).ParseFiles(v))
+	buf := &bytes.Buffer{}
+	if err := t.Execute(buf, &data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func unmarshalSubkey[T Conf](key string, cfg T) error {
+	var section string
+
+	switch any(cfg).(type) {
+	case *LkeConfig:
+		section = "lkeclusters"
+	case *NodePoolConfig:
+		section = "nodepools"
+	}
+
+	result := viper.GetStringMap(section)
+	_, ok := result[key]
+	if !ok {
+		return fmt.Errorf("viper.GetStringMap error: no data (empty map)")
+	}
+
+	subKey := fmt.Sprintf("%s.%s", section, key)
+	subViper := viper.Sub(subKey)
+
+	if err := subViper.Unmarshal(&cfg); err != nil {
+		return err
+	}
+
+	return nil
 }

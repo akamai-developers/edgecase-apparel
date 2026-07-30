@@ -34,6 +34,4 @@ pulumi-clean: pulumi-login
 go-test:
 	go test -v ./unit/...
 
-#go test -v ./unit/... 
-
 test-unit: go-test
