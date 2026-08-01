@@ -1,7 +1,6 @@
 package unit
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
@@ -27,6 +26,9 @@ func (aplMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prop
 				"secretKey": secret_key,
 			},
 			"objBuckets": objBuckets,
+			"primary": map[string]any{
+				"kubeconfig": kubecfg,
+			},
 		})
 
 		// Copy inputs and add outputs
@@ -83,7 +85,6 @@ func TestDeployApl(t *testing.T) {
 		pulumi.All(apl.URN(), apl.ValueYamlFiles.Index(pulumi.Int(0))).ApplyT(func(all []any) error {
 			urn := all[0].(pulumi.URN)
 			values := all[1].(pulumi.Asset).Text()
-			fmt.Println(values)
 
 			var data map[string]any
 

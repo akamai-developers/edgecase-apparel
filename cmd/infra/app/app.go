@@ -11,6 +11,14 @@ import (
 var stackOutputMap = pulumi.Map{}
 
 func Deploy(ctx *pulumi.Context) error {
+	if err := DeployInfra(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeployInfra(ctx *pulumi.Context) error {
 	// Get Viper configs
 	if err := cfg.InitConfig(); err != nil {
 		return err
@@ -38,6 +46,11 @@ func Deploy(ctx *pulumi.Context) error {
 	}
 
 	domain := domainResources["domain"].(*linode.Domain)
+
+	// Provision OBJ buckets
+	if err := SetupObj(ctx); err != nil {
+		return err
+	}
 
 	// Create LKE cluster
 	lkeCluster, err := linode.NewLkeCluster(ctx, lke.Label, &linode.LkeClusterArgs{
@@ -71,6 +84,7 @@ func Deploy(ctx *pulumi.Context) error {
 
 	stackOutputMap["lke_id"] = lkeCluster.ID()
 	stackOutputMap["lke_label"] = lkeCluster.Label
+	stackOutputMap["kubeconfig"] = lkeCluster.Kubeconfig
 
 	ctx.Export("primary", stackOutputMap)
 

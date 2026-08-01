@@ -1,16 +1,21 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/pulumi/pulumi-linode/sdk/v5/go/linode"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/spf13/viper"
 )
 
-var LinodeObjKeys, LinodeObjBuckets pulumi.Map
+var (
+	LinodeObjKeys    = pulumi.Map{}
+	LinodeObjBuckets = pulumi.Map{}
+)
 
 func SetupObj(ctx *pulumi.Context) error {
 	objKey, err := linode.NewObjectStorageKey(ctx, "pulumiObjKey", &linode.ObjectStorageKeyArgs{
-		Label: pulumi.String("image-access"),
+		Label: pulumi.String("ec-infra-key"),
 	})
 	if err != nil {
 		return err
@@ -25,7 +30,7 @@ func SetupObj(ctx *pulumi.Context) error {
 	objLabels := viper.GetStringSlice("appPlatform.obj.buckets")
 
 	for _, i := range objLabels {
-		bucketName := objPrefix + i
+		bucketName := fmt.Sprintf("%s-%s", objPrefix, i)
 
 		bucket, err := linode.NewObjectStorageBucket(ctx, bucketName, &linode.ObjectStorageBucketArgs{
 			AccessKey: objKey.AccessKey,
@@ -34,11 +39,11 @@ func SetupObj(ctx *pulumi.Context) error {
 			Label:     pulumi.String(bucketName),
 			LifecycleRules: linode.ObjectStorageBucketLifecycleRuleArray{
 				&linode.ObjectStorageBucketLifecycleRuleArgs{
-					Id:                                 pulumi.String("my-rule"),
+					Id:                                 pulumi.String("global-expiration-policy"),
 					Enabled:                            pulumi.Bool(true),
 					AbortIncompleteMultipartUploadDays: pulumi.Int(5),
 					Expiration: &linode.ObjectStorageBucketLifecycleRuleExpirationArgs{
-						Date: pulumi.String("2021-06-21"),
+						Days: pulumi.Int(90),
 					},
 				},
 			},
@@ -52,7 +57,6 @@ func SetupObj(ctx *pulumi.Context) error {
 
 	ctx.Export("obj", LinodeObjKeys)
 	ctx.Export("objBuckets", LinodeObjBuckets)
-	// ctx.Export("objBuckets", buckets)
 
 	return nil
 }

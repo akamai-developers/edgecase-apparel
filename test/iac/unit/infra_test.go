@@ -20,8 +20,9 @@ func (infraMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Pr
 	if args.TypeToken == "pulumi:pulumi:StackReference" {
 		outputs := resource.NewPropertyMapFromMap(map[string]interface{}{
 			"primary": map[string]any{
-				"lke_id":    lke_id,
-				"lke_label": lke_label,
+				"lke_id":     lke_id,
+				"lke_label":  lke_label,
+				"kubeconfig": kubecfg,
 			},
 			"dns": map[string]any{
 				"cca_record_id": cca_record_id,
@@ -72,6 +73,7 @@ func TestInfraStackOutputs(t *testing.T) {
 			if values, ok := outputs.Value.(map[string]any); ok {
 				assert.Equal(t, lke_id, values["lke_id"])
 				assert.Equal(t, lke_label, values["lke_label"])
+				assert.Equal(t, kubecfg, values["kubeconfig"])
 			} else {
 				t.Error("error: invalid lke data returned from stack reference")
 			}

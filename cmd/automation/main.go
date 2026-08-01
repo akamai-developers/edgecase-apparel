@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/akamai-developers/edgecase-apparel/cmd/infra/app"
+	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
+	infra "github.com/akamai-developers/edgecase-apparel/cmd/infra/app"
+	kube "github.com/akamai-developers/edgecase-apparel/cmd/kubernetes/app"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optpreview"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/spf13/viper"
 )
 
 type PulumiStack struct {
@@ -57,26 +61,70 @@ func (p *PulumiStack) Destroy(ctx context.Context, opts ...optdestroy.Option) au
 	return res
 }
 
+func buildStackArgs(s cfg.PulumiStackConfig) PulumiStackArgs {
+	var stkArgs PulumiStackArgs
+
+	name, _, _ := strings.Cut(s.Name, "-")
+	project := filepath.Base(s.Project)
+
+	stkArgs.StackName = auto.FullyQualifiedStackName("organization", project, s.Stack)
+	stkArgs.WorkDir = filepath.Join("..", name)
+
+	return stkArgs
+}
+
 func main() {
 	ctx := context.Background()
 
-	stkArgs := PulumiStackArgs{
-		Program:   app.Deploy,
-		StackName: auto.FullyQualifiedStackName("organization", "edgecase-apparel-infra", "dev"),
-		WorkDir:   filepath.Join("..", "infra"),
+	// Get Viper configs
+	if err := cfg.InitConfig(); err != nil {
+		fmt.Println(err)
+		os.Exit(0)
 	}
 
-	infra := InitStack(ctx, stkArgs)
+	var pulumiConfs cfg.PulumiConfig
 
-	//
+	if err := viper.UnmarshalKey("pulumi", &pulumiConfs); err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	// Make map of automation API stacks
+	stkMap := make(map[string]PulumiStackArgs)
+	for _, i := range pulumiConfs.Projects {
+		name, _, _ := strings.Cut(i.Name, "-")
+		stkArgs := buildStackArgs(i)
+
+		switch name {
+		case "infra":
+			stkArgs.Program = infra.Deploy
+		case "kubernetes":
+			stkArgs.Program = kube.Deploy
+		}
+
+		stkMap[name] = stkArgs
+	}
+
+	// Init the infra stack
+	infraStk := InitStack(ctx, stkMap["infra"])
+
+	// Init the K8s stack
+	kubeStk := InitStack(ctx, stkMap["kubernetes"])
+
 	args := os.Args[1]
 	switch args {
+	case "preview-kube":
+		_ = kubeStk.Preview(ctx)
+	case "deploy-kube":
+		_ = kubeStk.Deploy(ctx)
+	case "destroy-kube":
+		_ = kubeStk.Destroy(ctx)
 	case "preview-infra":
-		_ = infra.Preview(ctx)
+		_ = infraStk.Preview(ctx)
 	case "deploy-infra":
-		_ = infra.Deploy(ctx)
+		_ = infraStk.Deploy(ctx)
 	case "destroy-infra":
-		_ = infra.Destroy(ctx)
+		_ = infraStk.Destroy(ctx)
 	}
 }
 
@@ -93,7 +141,7 @@ func InitStack(ctx context.Context, st PulumiStackArgs) PulumiStack {
 			optdestroy.ProgressStreams(os.Stdout),
 			optdestroy.ErrorProgressStreams(os.Stderr),
 			optdestroy.Parallel(1),
-			optdestroy.Refresh(),
+			// optdestroy.Refresh(),
 		},
 		PreviewOpts: []optpreview.Option{
 			optpreview.Color("always"),
@@ -107,7 +155,7 @@ func InitStack(ctx context.Context, st PulumiStackArgs) PulumiStack {
 			optup.ProgressStreams(os.Stdout),
 			optup.ErrorProgressStreams(os.Stderr),
 			optup.Parallel(1),
-			optup.Refresh(),
+			// optup.Refresh(),
 		},
 		Stack: stk,
 	}

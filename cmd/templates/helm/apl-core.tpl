@@ -1,19 +1,19 @@
-{{ $apl := .main -}}
-{{ $objKeys := .opts.objKeys -}}
-{{ $objBuckets := .opts.objBuckets -}}
+{{- $apl := .main }}
+{{- $objKeys := .opts.objKeys }}
+{{- $objBuckets := .opts.objBuckets }}
 cluster:
   name: {{ $apl.PlatformName }}
-  provider: linode
   domainSuffix: {{ $apl.Domain }}
+  provider: linode
 otomi:
   adminPassword: {{ randInitPass }}
   hasExternalDNS: true
 dns:
-  domainFilters: 
-    - {{ $apl.Domain }}
   provider:
     linode:
       apiToken: {{ $apl.Token }}
+  domainFilters: 
+    - {{ $apl.Domain }}
 apps:
   alertmanager:
     enabled: true

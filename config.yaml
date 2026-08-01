@@ -9,6 +9,9 @@ pulumi:
     infra: *stack
     kubernetes: *stack
   projects:
+    - name: kubernetes-dev
+      project:  organization/edgecase-apparel-kubernetes
+      stack: *stack
     - name: infra-dev
       project: organization/edgecase-apparel-infra
       stack: *stack

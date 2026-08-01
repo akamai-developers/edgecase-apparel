@@ -1,10 +1,13 @@
 package app
 
 import (
+	"encoding/base64"
+	"fmt"
 	"path/filepath"
 	"strings"
 
 	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
+	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/spf13/viper"
@@ -26,12 +29,19 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		return nil, err
 	}
 
-	// Get Pulumi stack reference config
 	var (
+		apl        cfg.AplConfig
 		pulumiConf cfg.PulumiConfig
 		stkConf    cfg.PulumiStackConfig
 	)
 
+	if err := viper.UnmarshalKey("appPlatform", &apl); err != nil {
+		return nil, err
+	}
+
+	apl.Token = viper.GetString("linode.token")
+
+	// Get Pulumi stack reference config
 	if err := viper.UnmarshalKey("pulumi", &pulumiConf); err != nil {
 		return nil, err
 	}
@@ -45,7 +55,7 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		}
 	}
 
-	// Get OBJ key pair from stack reference
+	// Get OBJ keys and labels from stack reference
 	slug := filepath.Join(stkConf.Project, stkConf.Stack)
 	stkRef, err := cfg.StackRefInit(ctx, slug)
 	if err != nil {
@@ -57,19 +67,28 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		return nil, err
 	}
 
-	// Get OBJ buckets
 	objBuckets, err := stkRef.Get("objBuckets")
 	if err != nil {
 		return nil, err
 	}
 
-	var apl cfg.AplConfig
-	if err := viper.UnmarshalKey("appPlatform", &apl); err != nil {
+	// Get kubeconfig and create provider
+	clusterRefs, err := stkRef.Get("primary")
+	if err != nil {
 		return nil, err
 	}
 
-	// Get Linode API token
-	apl.Token = viper.GetString("linode.token")
+	kubeconfig, err := decodeKubeconfig(clusterRefs)
+	if err != nil {
+		return nil, err
+	}
+
+	k8sProvider, err := kubernetes.NewProvider(ctx, "ec-kubernetes-provider", &kubernetes.ProviderArgs{
+		Kubeconfig: pulumi.String(kubeconfig),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Override Helm values
 	opts := map[string]any{
@@ -98,7 +117,7 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 			pulumi.NewStringAsset(values),
 		},
 		WaitForJobs: pulumi.Bool(true),
-	})
+	}, pulumi.Provider(k8sProvider), pulumi.DeletedWith(k8sProvider))
 	if err != nil {
 		return nil, err
 	}
@@ -110,4 +129,26 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 	ctx.Export("apl", AppPlatformOutputs)
 
 	return aplChart, nil
+}
+
+func decodeKubeconfig(i any) (string, error) {
+	data, ok := i.(map[string]any)
+	if !ok {
+		err := fmt.Errorf("[ error ] invalid cluster reference type")
+		return "", err
+	}
+
+	enc, ok := data["kubeconfig"].(string)
+	if !ok {
+		fmt.Println(data["kubeconfig"].(string))
+		err := fmt.Errorf("[ error ] invalid kubeconfig reference type")
+		return "", err
+	}
+
+	k, err := base64.StdEncoding.DecodeString(string(enc))
+	if err != nil {
+		return "", err
+	}
+
+	return string(k), nil
 }
