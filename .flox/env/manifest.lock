@@ -24,6 +24,9 @@
       },
       "pulumi": {
         "pkg-path": "pulumi"
+      },
+      "pulumi-language-go": {
+        "pkg-path": "pulumiPackages.pulumi-language-go"
       }
     },
     "hook": {
@@ -94,37 +97,6 @@
         "out": "/nix/store/miqfq7rcpf6w1rw86bmhpija4ismp6f9-adr-tools-3.0.0"
       },
       "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "adr-tools",
-      "broken": false,
-      "derivation": "/nix/store/zahgf8bl2hi2aa1ykkb21zw72907gnjv-adr-tools-3.0.0.drv",
-      "description": "Command-line tools for working with Architecture Decision Records",
-      "install_id": "adr-tools",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "adr-tools-3.0.0",
-      "pname": "adr-tools",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:11.414613Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "3.0.0",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/1b94caphynwp67wrcdcjqizq3lql149w-adr-tools-3.0.0"
-      },
-      "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
@@ -225,37 +197,6 @@
     {
       "attr_path": "cmake",
       "broken": false,
-      "derivation": "/nix/store/kvksbd6p6x02dpl3g7p4p1q3xriyihs8-cmake-4.1.2.drv",
-      "description": "Cross-platform, open-source build system generator",
-      "install_id": "cmake",
-      "license": "BSD-3-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "cmake-4.1.2",
-      "pname": "cmake",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:11.883961Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "4.1.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/gv40vw8h600xn1qk610c1m60jzqj45jk-cmake-4.1.2"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "cmake",
-      "broken": false,
       "derivation": "/nix/store/37j32sza3djf453wa89ndywp61m0jby1-cmake-4.1.2.drv",
       "description": "Cross-platform, open-source build system generator",
       "install_id": "cmake",
@@ -344,37 +285,6 @@
         "out": "/nix/store/rz1pqbm5z3zfby250i0djfmfzzj7khg9-go-1.26.1"
       },
       "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "go",
-      "broken": false,
-      "derivation": "/nix/store/pcwra0rv1n0pq3r6sjlc6sx6a0bv499x-go-1.26.1.drv",
-      "description": "Go Programming language",
-      "install_id": "go",
-      "license": "BSD-3-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "go-1.26.1",
-      "pname": "go",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:12.974305Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "1.26.1",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/yv6jj27racylbfjw6a1cdr91ndxbgyf6-go-1.26.1"
-      },
-      "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
@@ -475,37 +385,6 @@
     {
       "attr_path": "go-tools",
       "broken": false,
-      "derivation": "/nix/store/10sazrm0zm071h2yq4jlzsvwf6fs6xz3-go-tools-2026.1.drv",
-      "description": "Collection of tools and libraries for working with Go code, including linters and static analysis",
-      "install_id": "go-tools",
-      "license": "MIT",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "go-tools-2026.1",
-      "pname": "go-tools",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:12.996965Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "2026.1",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/5xgci6q0wqyxdwdxr4iwyh6fxfxf3w6x-go-tools-2026.1"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "go-tools",
-      "broken": false,
       "derivation": "/nix/store/1p5pkp9ywjghxlaxk8834244w37rc2xx-go-tools-2026.1.drv",
       "description": "Collection of tools and libraries for working with Go code, including linters and static analysis",
       "install_id": "go-tools",
@@ -593,37 +472,6 @@
         "out": "/nix/store/knm2gwhdf0w61iaqhmnlmn181lq06df5-gofumpt-0.9.2"
       },
       "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "gofumpt",
-      "broken": false,
-      "derivation": "/nix/store/ivahq1p0ky421aiz0w17gk8z9fndcc6x-gofumpt-0.9.2.drv",
-      "description": "Stricter gofmt",
-      "install_id": "gofumpt",
-      "license": "BSD-3-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "gofumpt-0.9.2",
-      "pname": "gofumpt",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:13.032125Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "0.9.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/05drvq5yr1r3508s677if08ss6k9v114-gofumpt-0.9.2"
-      },
-      "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
@@ -723,37 +571,6 @@
     {
       "attr_path": "golangci-lint",
       "broken": false,
-      "derivation": "/nix/store/qclqnf46p70n30fya545xnkjxjsjf7bx-golangci-lint-2.11.4.drv",
-      "description": "Fast linters Runner for Go",
-      "install_id": "golangci-lint",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "golangci-lint-2.11.4",
-      "pname": "golangci-lint",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:13.039316Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "2.11.4",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/laj0sxwhanwj9nk8hnsqzsj1b141z2bm-golangci-lint-2.11.4"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "golangci-lint",
-      "broken": false,
       "derivation": "/nix/store/6hc83ga5aylvdpjy3fbajcqr2k75d52v-golangci-lint-2.11.4.drv",
       "description": "Fast linters Runner for Go",
       "install_id": "golangci-lint",
@@ -847,37 +664,6 @@
     {
       "attr_path": "pulumi",
       "broken": false,
-      "derivation": "/nix/store/3gmhwbxhii81h2j4bh4287x7w0j20v92-pulumi-3.192.0.drv",
-      "description": "Cloud development platform that makes creating cloud programs easy and productive",
-      "install_id": "pulumi",
-      "license": "Apache-2.0",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "name": "pulumi-3.192.0",
-      "pname": "pulumi",
-      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
-      "rev_count": 982522,
-      "rev_date": "2026-04-18T21:33:21Z",
-      "scrape_date": "2026-04-21T07:08:52.327845Z",
-      "stabilities": [
-        "stable",
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "3.192.0",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/0cffjs1lzw4ppmnkg413smnnwgldbmk2-pulumi-3.192.0"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "pulumi",
-      "broken": false,
       "derivation": "/nix/store/xc0v65hgwcjy1j98vv7jynlda4690sqb-pulumi-3.192.0.drv",
       "description": "Cloud development platform that makes creating cloud programs easy and productive",
       "install_id": "pulumi",
@@ -901,6 +687,99 @@
       ],
       "outputs": {
         "out": "/nix/store/fsqymqpb5s5nv99irpkwjmwc7pf7mxkk-pulumi-3.192.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "pulumiPackages.pulumi-language-go",
+      "broken": false,
+      "derivation": "/nix/store/gd3bb68qsha0plmx3xqmzp7n7wqd719z-pulumi-go-3.192.0.drv",
+      "description": "Language host for Pulumi programs written in Go",
+      "install_id": "pulumi-language-go",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "name": "pulumi-go-3.192.0",
+      "pname": "pulumi-language-go",
+      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "rev_count": 982522,
+      "rev_date": "2026-04-18T21:33:21Z",
+      "scrape_date": "2026-04-21T06:03:59.456649Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "3.192.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/5ayn2mvm2zhcyfyz6fakqhvpnwr9cdv9-pulumi-go-3.192.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "pulumiPackages.pulumi-language-go",
+      "broken": false,
+      "derivation": "/nix/store/rjkwiv5shq0nrfl8ra0pv7wxnn2whd8a-pulumi-go-3.192.0.drv",
+      "description": "Language host for Pulumi programs written in Go",
+      "install_id": "pulumi-language-go",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "name": "pulumi-go-3.192.0",
+      "pname": "pulumi-language-go",
+      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "rev_count": 982522,
+      "rev_date": "2026-04-18T21:33:21Z",
+      "scrape_date": "2026-04-21T06:37:36.081098Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "3.192.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/g947qhlhc18i2fzaa6q7m628wif80qra-pulumi-go-3.192.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "pulumiPackages.pulumi-language-go",
+      "broken": false,
+      "derivation": "/nix/store/jyk1a9f5qwyh7r4x5ywphs0yyb3vz564-pulumi-go-3.192.0.drv",
+      "description": "Language host for Pulumi programs written in Go",
+      "install_id": "pulumi-language-go",
+      "license": "Apache-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "name": "pulumi-go-3.192.0",
+      "pname": "pulumi-language-go",
+      "rev": "b12141ef619e0a9c1c84dc8c684040326f27cdcc",
+      "rev_count": 982522,
+      "rev_date": "2026-04-18T21:33:21Z",
+      "scrape_date": "2026-04-21T07:45:44.438337Z",
+      "stabilities": [
+        "stable",
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "3.192.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/yij0v17b1a67z14w4wm22d2jghpnn49v-pulumi-go-3.192.0"
       },
       "system": "x86_64-linux",
       "group": "toplevel",

@@ -39,7 +39,12 @@ test-infra:
 	$(MAKE) -C ./test/iac test-unit
 
 go-lint:
-	@golangci-lint run --no-config
+	@GOLANGCI_LINT_CACHE=$(mktemp -d) && \
+	  golangci-lint fmt && \
+	  golangci-lint run
 
 go-fmt:
+	@gofmt -l -w ./cmd
+	@gofmt -l -w ./test
 	@gofumpt -l -w ./cmd ./test
+	

@@ -2,9 +2,7 @@ package app
 
 import (
 	"encoding/base64"
-	"fmt"
-	"path/filepath"
-	"strings"
+	"errors"
 
 	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
@@ -13,8 +11,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-var AppPlatformOutputs = pulumi.Map{}
+var (
+	// AppPlatformOutputs is a Pulumi map for exporting App Platform outputs.
+	AppPlatformOutputs  = pulumi.Map{}
+	KubeProviderOutputs = pulumi.Map{}
+	errKubeConfig       = errors.New("[ error ] invalid kubeconfig reference type")
+)
 
+// Deploy is a wrapper around the DeployAPL func, which enables the Pulumi CLI
+// to execute the program independently of the Automation API.
 func Deploy(ctx *pulumi.Context) error {
 	if _, err := DeployApl(ctx); err != nil {
 		return err
@@ -23,17 +28,17 @@ func Deploy(ctx *pulumi.Context) error {
 	return nil
 }
 
+// DeployApl is a Pulumi program that deploys the App Platform Helm chart to a
+// Kubernetes cluster.
+//
+//nolint:funlen
 func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 	// Get Viper configs
 	if err := cfg.InitConfig(); err != nil {
 		return nil, err
 	}
 
-	var (
-		apl        cfg.AplConfig
-		pulumiConf cfg.PulumiConfig
-		stkConf    cfg.PulumiStackConfig
-	)
+	var apl cfg.AplConfig
 
 	if err := viper.UnmarshalKey("appPlatform", &apl); err != nil {
 		return nil, err
@@ -41,44 +46,19 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 
 	apl.Token = viper.GetString("linode.token")
 
-	// Get Pulumi stack reference config
-	if err := viper.UnmarshalKey("pulumi", &pulumiConf); err != nil {
-		return nil, err
-	}
-
-	stkContext := pulumiConf.Context
-	for _, i := range pulumiConf.Projects {
-		prefix, suffix, _ := strings.Cut(i.Name, "-")
-
-		if prefix == "infra" && suffix == stkContext[prefix] {
-			stkConf = i
-		}
-	}
-
-	// Get OBJ keys and labels from stack reference
-	slug := filepath.Join(stkConf.Project, stkConf.Stack)
-	stkRef, err := cfg.StackRefInit(ctx, slug)
+	// Initialize infra stack references
+	stkRef, err := cfg.StackRefInit(ctx, "infra")
 	if err != nil {
 		return nil, err
 	}
 
-	objKeys, err := stkRef.Get("obj")
+	// Get kubeconfig, decode it, and create provider
+	kubecfg, err := stkRef.GetKubeConfig("primary")
 	if err != nil {
 		return nil, err
 	}
 
-	objBuckets, err := stkRef.Get("objBuckets")
-	if err != nil {
-		return nil, err
-	}
-
-	// Get kubeconfig and create provider
-	clusterRefs, err := stkRef.Get("primary")
-	if err != nil {
-		return nil, err
-	}
-
-	kubeconfig, err := decodeKubeconfig(clusterRefs)
+	kubeconfig, err := decodeKubeconfig(kubecfg)
 	if err != nil {
 		return nil, err
 	}
@@ -90,13 +70,16 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		return nil, err
 	}
 
-	// Override Helm values
-	opts := map[string]any{
-		"objKeys":    objKeys,
-		"objBuckets": objBuckets,
+	AppPlatformOutputs["k8sProviderId"] = k8sProvider.ID()
+
+	// Get OBJ keys and bucket labels
+	objData, err := stkRef.GetObj()
+	if err != nil {
+		return nil, err
 	}
 
-	values, err := apl.HelmTemplate(opts)
+	// Override Helm values template variables
+	values, err := apl.HelmTemplate(objData)
 	if err != nil {
 		return nil, err
 	}
@@ -122,30 +105,26 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		return nil, err
 	}
 
-	AppPlatformOutputs["apl_id"] = aplChart.ID()
-	AppPlatformOutputs["apl_status"] = aplChart.Status
-	AppPlatformOutputs["apl_version"] = aplChart.Version
+	// Export APL stack outputs
+	AppPlatformOutputs["aplId"] = aplChart.ID()
+	AppPlatformOutputs["aplLint"] = aplChart.Lint
+	AppPlatformOutputs["aplName"] = aplChart.Name
+	AppPlatformOutputs["aplRepo"] = aplChart.RepositoryOpts.Repo()
+	AppPlatformOutputs["aplStatus"] = aplChart.Status
+	AppPlatformOutputs["aplVersion"] = aplChart.Version
 
 	ctx.Export("apl", AppPlatformOutputs)
 
 	return aplChart, nil
 }
 
-func decodeKubeconfig(i any) (string, error) {
-	data, ok := i.(map[string]any)
-	if !ok {
-		err := fmt.Errorf("[ error ] invalid cluster reference type")
-		return "", err
-	}
-
+func decodeKubeconfig(data map[string]any) (string, error) {
 	enc, ok := data["kubeconfig"].(string)
 	if !ok {
-		fmt.Println(data["kubeconfig"].(string))
-		err := fmt.Errorf("[ error ] invalid kubeconfig reference type")
-		return "", err
+		return "", errKubeConfig
 	}
 
-	k, err := base64.StdEncoding.DecodeString(string(enc))
+	k, err := base64.StdEncoding.DecodeString(enc)
 	if err != nil {
 		return "", err
 	}

@@ -6,13 +6,14 @@ import (
 	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
 	utils "github.com/akamai-developers/edgecase-apparel/internal"
 	"github.com/pulumi/pulumi-linode/sdk/v5/go/linode"
-
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/spf13/viper"
 )
 
+// LinodeDNSOutputs is a Pulumi map for exporting DNS outputs.
 var LinodeDNSOutputs = pulumi.Map{}
 
+// SetupDNS is a Pulumi program that creates a DNS zone and records.
 func SetupDNS(ctx *pulumi.Context) (map[string]any, error) {
 	// Get Viper configs
 	if err := cfg.InitConfig(); err != nil {
@@ -37,8 +38,9 @@ func SetupDNS(ctx *pulumi.Context) (map[string]any, error) {
 	}
 
 	// Get domain ID
-	id := domain.ID().ApplyT(func(v string) int {
+	id, _ := domain.ID().ApplyT(func(v string) int {
 		id, _ := strconv.Atoi(v)
+
 		return id
 	}).(pulumi.IntOutput)
 
@@ -57,8 +59,8 @@ func SetupDNS(ctx *pulumi.Context) (map[string]any, error) {
 
 	// Export outputs
 	LinodeDNSOutputs["domain"] = domain.Domain
-	LinodeDNSOutputs["domain_id"] = domain.ID()
-	LinodeDNSOutputs["cca_record_id"] = caaRecord.ID()
+	LinodeDNSOutputs["domainId"] = domain.ID()
+	LinodeDNSOutputs["ccaRecordId"] = caaRecord.ID()
 
 	ctx.Export("dns", LinodeDNSOutputs)
 

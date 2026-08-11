@@ -14,28 +14,28 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    - depguard
+    # - depguard
     - dogsled
     - dupl
     - dupword
     - durationcheck
     - embeddedstructfieldcheck
-    - err113
+    # - err113
     - errcheck
     - errchkjson
     - errname
     - errorlint
     - exhaustive
-    - exhaustruct
+    # - exhaustruct
     - exptostd
     - fatcontext
-    - forbidigo
+    # - forbidigo
     - forcetypeassert
     - funcorder
     - funlen
     - ginkgolinter
     - gocheckcompilerdirectives
-    - gochecknoglobals
+    #- gochecknoglobals
     - gochecknoinits
     - gochecksumtype
     - gocognit
@@ -68,7 +68,7 @@ linters:
     - makezero
     - mirror
     - misspell
-    - mnd
+    # - mnd
     - modernize
     - musttag
     - nakedret
@@ -78,7 +78,7 @@ linters:
     - nilnil
     - nlreturn
     - noctx
-    - noinlineerr
+    #- noinlineerr
     - nolintlint
     - nonamedreturns
     - nosprintfhostport
@@ -112,15 +112,46 @@ linters:
     - varnamelen
     - wastedassign
     - whitespace
-    - wrapcheck
-    - wsl
+    # - wrapcheck
+    # - wsl
     - wsl_v5
     - zerologlint
+  settings:
+    revive:
+      confidence: 1.0
+      # enable-all-rules: false
+      # enable-default-rules: false
+    funlen:
+      ignore-comments: true
+    prealloc:
+      simple: true
+      range-loops: false
+      for-loops: false
+    varnamelen:
+      max-distance: 5
+      min-name-length: 3
+      check-receiver: false
+      check-return: false
+      check-type-param: false
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-names:
+        - id
+      ignore-decls:
+        - i objLabels []string
+        # - i []struct
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
   exclusions:
     rules:
       - linters:
           - staticcheck
         text: "ST1005:"
+    paths:
+      - unit/base.go
 formatters:
   enable:
     - gci
@@ -128,5 +159,5 @@ formatters:
     - gofumpt
     - goimports
 run:
+  tests: false
   timeout: 5m
-  

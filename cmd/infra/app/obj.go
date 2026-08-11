@@ -9,10 +9,13 @@ import (
 )
 
 var (
-	LinodeObjKeys    = pulumi.Map{}
+	// LinodeObjKeys is a Pulumi map for exporting OBJ access and secret keys.
+	LinodeObjKeys = pulumi.Map{}
+	// LinodeObjBuckets is a Pulumi map for exporting labels of OBJ buckets.
 	LinodeObjBuckets = pulumi.Map{}
 )
 
+// SetupObj is a Pulumi program that creates a Object Storage buckets and key pairs.
 func SetupObj(ctx *pulumi.Context) error {
 	objKey, err := linode.NewObjectStorageKey(ctx, "pulumiObjKey", &linode.ObjectStorageKeyArgs{
 		Label: pulumi.String("ec-infra-key"),
@@ -29,8 +32,8 @@ func SetupObj(ctx *pulumi.Context) error {
 	objRegion := viper.GetString("appPlatform.region")
 	objLabels := viper.GetStringSlice("appPlatform.obj.buckets")
 
-	for _, i := range objLabels {
-		bucketName := fmt.Sprintf("%s-%s", objPrefix, i)
+	for _, label := range objLabels {
+		bucketName := fmt.Sprintf("%s-%s", objPrefix, label)
 
 		bucket, err := linode.NewObjectStorageBucket(ctx, bucketName, &linode.ObjectStorageBucketArgs{
 			AccessKey: objKey.AccessKey,
@@ -52,7 +55,7 @@ func SetupObj(ctx *pulumi.Context) error {
 			return err
 		}
 
-		LinodeObjBuckets[i] = bucket.Label
+		LinodeObjBuckets[label] = bucket.Label
 	}
 
 	ctx.Export("obj", LinodeObjKeys)

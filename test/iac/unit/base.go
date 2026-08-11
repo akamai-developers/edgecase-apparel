@@ -8,22 +8,28 @@ import (
 )
 
 const (
-	apl_id     string = "default/apl"
-	apl_status string = "deployed"
+	// apl
+	aplId         string = "default/apl"
+	aplLint       bool   = true
+	aplName       string = "apl"
+	aplRepo       string = "https://linode.github.io/apl-core"
+	aplStatus     string = "deployed"
+	k8sProviderId string = "525256"
 
-	cca_record_id string = "123456"
-	domain        string = "edgecase-apparel.app"
-	domain_id     string = "251816"
+	// dns
+	ccaRecordId string = "123456"
+	domain      string = "edgecase-apparel.app"
+	domainId    string = "251816"
 
-	lke_id    string = "123456"
-	lke_label string = "edgecase-apparel-main"
+	lkeId    string = "123456"
+	lkeLabel string = "edgecase-apparel-main"
 
-	linode_token string = "55772f00-85e0-11f1-85a5-b3f1d391c9f3"
+	linodeToken  string = "55772f00-85e0-11f1-85a5-b3f1d391c9f3"
 	platformName string = "edgecase-apparel-platform"
 
-	objPrefix  string = "ec-apl-"
-	access_key string = "2ab3b96e8ad111f197ae0ba8880fda5c"
-	secret_key string = "372fbf768ad111f180be134ebd0c8ed838da6f9c8ad111f18"
+	objPrefix string = "ec-apl-"
+	accessKey string = "2ab3b96e8ad111f197ae0ba8880fda5c"
+	secretKey string = "372fbf768ad111f180be134ebd0c8ed838da6f9c8ad111f18"
 )
 
 var objBuckets = map[string]any{
@@ -56,7 +62,24 @@ func (t *TestStack) Init(name string) {
 	t.Stack = stack
 }
 
-var kubecfg = `
+func NewTestStack(name string) TestStack {
+	ts := new(TestStack)
+	n := strings.ToUpper(name)
+	p := fmt.Sprintf("ECA_%s_PROJECT", n)
+	s := fmt.Sprintf("ECA_%s_STACK", n)
+
+	proj := os.Getenv(p)
+	stack := os.Getenv(s)
+
+	ts.Name = n
+	ts.Project = proj
+	ts.Slug = filepath.Join("organization", proj, stack)
+	ts.Stack = stack
+
+	return *ts
+}
+
+var kubeconfig = `
 CmFwaVZlcnNpb246IHYxCmtpbmQ6IENvbmZpZwpwcmVmZXJlbmNlczoge30KCmNsdXN0ZXJzOgot
 IGNsdXN0ZXI6CiAgICBjZXJ0aWZpY2F0ZS1hdXRob3JpdHktZGF0YTogTFMwdExTMUNSVWRKVGlC
 RFJWSlVTVVpKUTBGVVJTMHRMUzB0Q2sxSlNVUkpha05EUVdkeFowRjNTVUpCWjBsVldsVkhLMDlX

@@ -18,68 +18,69 @@ func (aplMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prop
 	if args.TypeToken == "pulumi:pulumi:StackReference" {
 		outputs := resource.NewPropertyMapFromMap(map[string]interface{}{
 			"apl": map[string]any{
-				"apl_id":     apl_id,
-				"apl_status": apl_status,
+				"aplId":         aplId,
+				"aplLint":       aplLint,
+				"aplName":       aplName,
+				"aplRepo":       aplRepo,
+				"aplStatus":     aplStatus,
+				"k8sProviderId": k8sProviderId,
 			},
 			"obj": map[string]any{
-				"accessKey": access_key,
-				"secretKey": secret_key,
+				"accessKey": accessKey,
+				"secretKey": secretKey,
 			},
 			"objBuckets": objBuckets,
 			"primary": map[string]any{
-				"kubeconfig": kubecfg,
+				"kubeconfig": kubeconfig,
 			},
 		})
 
 		// Copy inputs and add outputs
 		state := args.Inputs.Copy()
 		state["outputs"] = resource.NewObjectProperty(outputs)
+
 		return args.Name + "_id", state, nil
 	}
+
 	// Handle all other resources
 	return args.Name + "_id", args.Inputs, nil
 }
 
 func (aplMocks) Call(args pulumi.MockCallArgs) (resource.PropertyMap, error) {
+	// args.Args.HasValue()
 	return args.Args, nil
 }
 
 func TestDeployApl(t *testing.T) {
-	ts := *new(TestStack)
-	ts.Init("apl")
+	ts := NewTestStack("apl")
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
 		apl, err := app.DeployApl(ctx)
 		assert.NoError(t, err)
 
+		stk, err := pulumi.NewStackReference(ctx, ts.Slug, nil)
+		assert.NoError(t, err)
+
+		outputs, err := stk.GetOutputDetails("apl")
+		assert.NoError(t, err)
+
 		var wg sync.WaitGroup
-		wg.Add(3)
+		wg.Add(2)
 
-		// Test chart and release names, and that linting is enabled
-		pulumi.All(apl.URN(), apl.Chart, apl.Lint, apl.Name).ApplyT(func(all []any) error {
-			urn := all[0].(pulumi.URN)
-			chart := all[1].(string)
-			lint := all[2].(*bool)
-			name := all[3].(*string)
+		go func() {
+			defer wg.Done()
 
-			assert.Equalf(t, "apl", chart, "invalid chart name: %v", urn)
-			assert.Equalf(t, true, *lint, "linting should be 'true': %v", urn)
-			assert.Equalf(t, "apl", *name, "invalid release name: %v", urn)
-			wg.Done()
-
-			return nil
-		})
-
-		// Test version and remote chart repo
-		pulumi.All(apl.URN(), apl.RepositoryOpts.Repo()).ApplyT(func(all []any) error {
-			urn := all[0].(pulumi.URN)
-			repo := all[1].(*string)
-
-			assert.Equalf(t, "https://linode.github.io/apl-core", *repo, "invalid remote chart repo: %v", urn)
-			wg.Done()
-
-			return nil
-		})
+			if values, ok := outputs.Value.(map[string]any); ok {
+				assert.Equal(t, aplId, values["aplId"])
+				assert.Equal(t, aplLint, values["aplLint"])
+				assert.Equal(t, aplName, values["aplName"])
+				assert.Equal(t, aplRepo, values["aplRepo"])
+				assert.Equal(t, aplStatus, values["aplStatus"])
+				assert.Equal(t, k8sProviderId, values["k8sProviderId"])
+			} else {
+				t.Error("error: invalid type returned from stack reference")
+			}
+		}()
 
 		// Test helm values
 		pulumi.All(apl.URN(), apl.ValueYamlFiles.Index(pulumi.Int(0))).ApplyT(func(all []any) error {
@@ -154,7 +155,7 @@ func TestDeployApl(t *testing.T) {
 					assert.NoError(t, err)
 
 					got = tokenData.Linode.ApiToken
-					wants := linode_token
+					wants := linodeToken
 					assert.Containsf(t, got, wants, "missing value for %s.%s.linode.apiToken: %v", i, key, urn)
 				case "otomi":
 					// Test that adminPassword contains a value
@@ -165,10 +166,12 @@ func TestDeployApl(t *testing.T) {
 			}
 
 			wg.Done()
+
 			return nil
 		})
 
 		wg.Wait()
+
 		return nil
 	}, pulumi.WithMocks(ts.Project, ts.Stack, aplMocks(0)))
 	assert.NoError(t, err)

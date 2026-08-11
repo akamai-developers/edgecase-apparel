@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
 	infra "github.com/akamai-developers/edgecase-apparel/cmd/infra/app"
@@ -18,59 +18,62 @@ import (
 	"github.com/spf13/viper"
 )
 
-type PulumiStack struct {
+const (
+	Infra = "infra"
+	Kube  = "kubernetes"
+)
+
+var errPulumiRunFunc = errors.New("invalid pulumi.RunFunc")
+
+type PulumiAutoStack struct {
+	Opts  PulumiAutoOpts
+	Stack auto.Stack
+}
+
+type PulumiRunFuncs map[string]pulumi.RunFunc
+
+type PulumiAutoStackMap map[string]PulumiAutoStack
+
+type PulumiAutoOpts struct {
 	DestroyOpts []optdestroy.Option
 	PreviewOpts []optpreview.Option
 	UpOpts      []optup.Option
-	Stack       auto.Stack
 }
 
-type PulumiStackArgs struct {
-	Program   pulumi.RunFunc
-	StackName string
-	WorkDir   string
-}
-
-func (p *PulumiStack) Preview(ctx context.Context, opts ...optpreview.Option) auto.PreviewResult {
+func (p PulumiAutoStack) Preview(ctx context.Context, opts ...optpreview.Option) auto.PreviewResult {
+	o := p.Opts.PreviewOpts
 	if len(opts) > 0 {
-		p.PreviewOpts = append(p.PreviewOpts, opts...)
+		o = append(o, opts...)
 	}
-	res, err := p.Stack.Preview(ctx, p.PreviewOpts...)
-	chkError("p.Preview()", err)
+
+	res, err := p.Stack.Preview(ctx, o...)
+	chkError(err, "failed pulumi preview")
 
 	return res
 }
 
-func (p *PulumiStack) Deploy(ctx context.Context, opts ...optup.Option) auto.UpResult {
+func (p PulumiAutoStack) Deploy(ctx context.Context, opts ...optup.Option) auto.UpResult {
+	o := p.Opts.UpOpts
 	if len(opts) > 0 {
-		p.UpOpts = append(p.UpOpts, opts...)
+		o = append(o, opts...)
 	}
-	res, err := p.Stack.Up(ctx, p.UpOpts...)
-	chkError("p.Deploy()", err)
+
+	res, err := p.Stack.Up(ctx, o...)
+	chkError(err, "failed pulumi deploy")
 
 	return res
 }
 
-func (p *PulumiStack) Destroy(ctx context.Context, opts ...optdestroy.Option) auto.DestroyResult {
+func (p PulumiAutoStack) Destroy(ctx context.Context, opts ...optdestroy.Option) auto.DestroyResult {
+	o := p.Opts.DestroyOpts
 	if len(opts) > 0 {
-		p.DestroyOpts = append(p.DestroyOpts, opts...)
+		o = append(o, opts...)
 	}
-	res, err := p.Stack.Destroy(ctx, p.DestroyOpts...)
-	chkError("p.Destroy()", err)
+
+	res, err := p.Stack.Destroy(ctx, o...)
+	chkError(err, "failed pulumi destroy")
 
 	return res
-}
-
-func buildStackArgs(s cfg.PulumiStackConfig) PulumiStackArgs {
-	var stkArgs PulumiStackArgs
-
-	name, _, _ := strings.Cut(s.Name, "-")
-	project := filepath.Base(s.Project)
-
-	stkArgs.StackName = auto.FullyQualifiedStackName("organization", project, s.Stack)
-	stkArgs.WorkDir = filepath.Join("..", name)
-
-	return stkArgs
 }
 
 func main() {
@@ -82,89 +85,95 @@ func main() {
 		os.Exit(0)
 	}
 
-	var pulumiConfs cfg.PulumiConfig
+	var pulumiConfs cfg.PulumiConfigs
 
-	if err := viper.UnmarshalKey("pulumi", &pulumiConfs); err != nil {
+	if err := viper.UnmarshalKey("pulumi", &pulumiConfs.Projects); err != nil {
 		fmt.Println(err)
 		os.Exit(0)
 	}
 
-	// Make map of automation API stacks
-	stkMap := make(map[string]PulumiStackArgs)
-	for _, i := range pulumiConfs.Projects {
-		name, _, _ := strings.Cut(i.Name, "-")
-		stkArgs := buildStackArgs(i)
-
-		switch name {
-		case "infra":
-			stkArgs.Program = infra.Deploy
-		case "kubernetes":
-			stkArgs.Program = kube.Deploy
-		}
-
-		stkMap[name] = stkArgs
-	}
-
-	// Init the infra stack
-	infraStk := InitStack(ctx, stkMap["infra"])
-
-	// Init the K8s stack
-	kubeStk := InitStack(ctx, stkMap["kubernetes"])
+	stkMap := InitStacks(ctx, pulumiConfs)
 
 	args := os.Args[1]
 	switch args {
 	case "preview-kube":
-		_ = kubeStk.Preview(ctx)
+		_ = stkMap[Kube].Preview(ctx)
 	case "deploy-kube":
-		_ = kubeStk.Deploy(ctx)
+		_ = stkMap[Kube].Deploy(ctx)
 	case "destroy-kube":
-		_ = kubeStk.Destroy(ctx)
+		_ = stkMap[Kube].Destroy(ctx)
 	case "preview-infra":
-		_ = infraStk.Preview(ctx)
+		_ = stkMap[Infra].Preview(ctx)
 	case "deploy-infra":
-		_ = infraStk.Deploy(ctx)
+		_ = stkMap[Infra].Deploy(ctx)
 	case "destroy-infra":
-		_ = infraStk.Destroy(ctx)
+		_ = stkMap[Infra].Destroy(ctx)
 	}
 }
 
-func InitStack(ctx context.Context, st PulumiStackArgs) PulumiStack {
-	stk, err := auto.UpsertStackLocalSource(ctx, st.StackName, st.WorkDir, auto.Program(st.Program))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap {
+	stkMap := PulumiAutoStackMap{}
+
+	stkFuncs := PulumiRunFuncs{
+		Infra: infra.Deploy,
+		Kube:  kube.Deploy,
 	}
 
-	stkOpts := PulumiStack{
-		DestroyOpts: []optdestroy.Option{
-			optdestroy.Color("always"),
-			optdestroy.ProgressStreams(os.Stdout),
-			optdestroy.ErrorProgressStreams(os.Stderr),
-			optdestroy.Parallel(1),
-			// optdestroy.Refresh(),
-		},
-		PreviewOpts: []optpreview.Option{
-			optpreview.Color("always"),
-			optpreview.ProgressStreams(os.Stdout),
-			optpreview.ErrorProgressStreams(os.Stderr),
-			optpreview.Parallel(1),
-			// optpreview.Refresh(),
-		},
-		UpOpts: []optup.Option{
-			optup.Color("always"),
-			optup.ProgressStreams(os.Stdout),
-			optup.ErrorProgressStreams(os.Stderr),
-			optup.Parallel(1),
-			// optup.Refresh(),
-		},
-		Stack: stk,
+	for _, prog := range confs.Projects {
+		var stk PulumiAutoStack
+
+		stk.Opts = PulumiAutoOpts{
+			DestroyOpts: []optdestroy.Option{
+				optdestroy.Color("always"),
+				optdestroy.ProgressStreams(os.Stdout),
+				optdestroy.ErrorProgressStreams(os.Stderr),
+				optdestroy.Parallel(1),
+				// optdestroy.Refresh(),
+			},
+			PreviewOpts: []optpreview.Option{
+				optpreview.Color("always"),
+				optpreview.ProgressStreams(os.Stdout),
+				optpreview.ErrorProgressStreams(os.Stderr),
+				optpreview.Parallel(1),
+				// optpreview.Refresh(),
+			},
+			UpOpts: []optup.Option{
+				optup.Color("always"),
+				optup.ProgressStreams(os.Stdout),
+				optup.ErrorProgressStreams(os.Stderr),
+				optup.Parallel(1),
+				// optup.Refresh(),
+			},
+		}
+
+		if _, ok := stkFuncs[prog.Name]; !ok {
+			fmt.Println("Did this print?")
+			chkError(errPulumiRunFunc, prog.Name)
+		}
+
+		fqsn := filepath.Join("organization", prog.Project, prog.Stack)
+		program := stkFuncs[prog.Name]
+		workdir := filepath.Join("..", prog.Name)
+
+		autoStk, err := auto.UpsertStackLocalSource(ctx, fqsn, workdir, auto.Program(program))
+		if err != nil {
+			fmt.Println("how about this")
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		stk.Stack = autoStk
+
+		stkMap[prog.Name] = stk
 	}
-	return stkOpts
+
+	return stkMap
 }
 
-func chkError(funcName string, err error) {
+//nolint:err113
+func chkError(err error, i ...any) {
 	if err != nil {
-		fmt.Printf("\n[ error ] %s: %v\n", funcName, err)
+		fmt.Printf("\n[ error ] %s: %v\n", err.Error(), i)
 		os.Exit(1)
 	}
 }

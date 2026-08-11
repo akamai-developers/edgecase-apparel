@@ -1,4 +1,4 @@
-name: edgecase-apparel-infra
+name: edgecase-apparel-kubernetes
 description: IaC for Akamai EdgeCase Apparel
 runtime: go
 backend:

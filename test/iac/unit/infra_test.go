@@ -7,7 +7,6 @@ import (
 
 	"github.com/akamai-developers/edgecase-apparel/cmd/infra/app"
 	"github.com/go-openapi/testify/v2/assert"
-
 	"github.com/pulumi/pulumi-linode/sdk/v5/go/linode"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -20,25 +19,26 @@ func (infraMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Pr
 	if args.TypeToken == "pulumi:pulumi:StackReference" {
 		outputs := resource.NewPropertyMapFromMap(map[string]interface{}{
 			"primary": map[string]any{
-				"lke_id":     lke_id,
-				"lke_label":  lke_label,
-				"kubeconfig": kubecfg,
+				"lkeId":      lkeId,
+				"lkeLabel":   lkeLabel,
+				"kubeconfig": kubeconfig,
 			},
 			"dns": map[string]any{
-				"cca_record_id": cca_record_id,
-				"domain":        domain,
-				"domain_id":     domain_id,
+				"ccaRecordId": ccaRecordId,
+				"domain":      domain,
+				"domainId":    domainId,
 			},
 		})
 
 		// Copy inputs and add outputs
 		state := args.Inputs.Copy()
 		state["outputs"] = resource.NewObjectProperty(outputs)
+
 		return args.Name + "_id", state, nil
 	}
 
 	if args.TypeToken == "linode:index/domain:Domain" {
-		return domain_id, args.Inputs, nil
+		return domainId, args.Inputs, nil
 	}
 	// Handle all other resources
 	return args.Name + "_id", args.Inputs, nil
@@ -71,9 +71,9 @@ func TestInfraStackOutputs(t *testing.T) {
 			assert.NoError(t, err)
 
 			if values, ok := outputs.Value.(map[string]any); ok {
-				assert.Equal(t, lke_id, values["lke_id"])
-				assert.Equal(t, lke_label, values["lke_label"])
-				assert.Equal(t, kubecfg, values["kubeconfig"])
+				assert.Equal(t, lkeId, values["lkeId"])
+				assert.Equal(t, lkeLabel, values["lkeLabel"])
+				assert.Equal(t, kubeconfig, values["kubeconfig"])
 			} else {
 				t.Error("error: invalid lke data returned from stack reference")
 			}
@@ -87,15 +87,16 @@ func TestInfraStackOutputs(t *testing.T) {
 			assert.NoError(t, err)
 
 			if values, ok := outputs.Value.(map[string]any); ok {
-				assert.Equal(t, cca_record_id, values["cca_record_id"])
+				assert.Equal(t, ccaRecordId, values["ccaRecordId"])
 				assert.Equal(t, domain, values["domain"])
-				assert.Equal(t, domain_id, values["domain_id"])
+				assert.Equal(t, domainId, values["domainId"])
 			} else {
 				t.Error("error: invalid type returned from stack reference")
 			}
 		}()
 
 		wg.Wait()
+
 		return nil
 	}, pulumi.WithMocks(ts.Project, ts.Stack, infraMocks(0)))
 	assert.NoError(t, err)
@@ -135,10 +136,10 @@ func TestSetupDns(t *testing.T) {
 		// Test CAA record domain ID
 		pulumi.All(ldr.URN(), ldr.DomainId, ld.ID()).ApplyT(func(all []any) error {
 			urn := all[0].(pulumi.URN)
-			domainId := all[1].(int)
-			id, _ := strconv.Atoi(domain_id)
+			_domainId := all[1].(int)
+			id, _ := strconv.Atoi(domainId)
 
-			assert.Equalf(t, id, domainId, "invalid or missing domain ID: %v", urn)
+			assert.Equalf(t, id, _domainId, "invalid or missing domain ID: %v", urn)
 			wg.Done()
 
 			return nil
@@ -173,6 +174,7 @@ func TestSetupDns(t *testing.T) {
 		})
 
 		wg.Wait()
+
 		return nil
 	}, pulumi.WithMocks(ts.Project, ts.Stack, infraMocks(0)))
 	assert.NoError(t, err)

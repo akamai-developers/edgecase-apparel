@@ -5,16 +5,19 @@ defaults:
   - &stack dev
 
 pulumi:
-  context:
-    infra: *stack
-    kubernetes: *stack
-  projects:
-    - name: kubernetes-dev
-      project:  organization/edgecase-apparel-kubernetes
-      stack: *stack
-    - name: infra-dev
-      project: organization/edgecase-apparel-infra
-      stack: *stack
+  - name: infra
+    project: edgecase-apparel-infra
+    stackCtx: *stack
+  - name: kubernetes
+    project: edgecase-apparel-kubernetes
+    stackCtx: *stack
+  # projects:
+  #   - name: kubernetes-dev
+  #     project:  organization/edgecase-apparel-kubernetes
+  #     stack: *stack
+  #   - name: infra-dev
+  #     project: organization/
+  #     stack: *stack
 
 # dns
 dns:
