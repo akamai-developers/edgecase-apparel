@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
 	infra "github.com/akamai-developers/edgecase-apparel/cmd/infra/app"
@@ -23,7 +25,11 @@ const (
 	Kube  = "kubernetes"
 )
 
-var errPulumiRunFunc = errors.New("invalid pulumi.RunFunc")
+var (
+	errAppName       = errors.New("missing or invalid stack name")
+	errAppAction     = errors.New("missing or invalid pulumi action")
+	errPulumiRunFunc = errors.New("invalid pulumi.RunFunc")
+)
 
 type PulumiAutoStack struct {
 	Opts  PulumiAutoOpts
@@ -93,21 +99,15 @@ func main() {
 	}
 
 	stkMap := InitStacks(ctx, pulumiConfs)
+	action, app := parseArgs()
 
-	args := os.Args[1]
-	switch args {
-	case "preview-kube":
-		_ = stkMap[Kube].Preview(ctx)
-	case "deploy-kube":
-		_ = stkMap[Kube].Deploy(ctx)
-	case "destroy-kube":
-		_ = stkMap[Kube].Destroy(ctx)
-	case "preview-infra":
-		_ = stkMap[Infra].Preview(ctx)
-	case "deploy-infra":
-		_ = stkMap[Infra].Deploy(ctx)
-	case "destroy-infra":
-		_ = stkMap[Infra].Destroy(ctx)
+	switch action {
+	case "preview":
+		_ = stkMap[app].Preview(ctx)
+	case "deploy":
+		_ = stkMap[app].Deploy(ctx)
+	case "destroy":
+		_ = stkMap[app].Destroy(ctx)
 	}
 }
 
@@ -147,7 +147,6 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 		}
 
 		if _, ok := stkFuncs[prog.Name]; !ok {
-			fmt.Println("Did this print?")
 			chkError(errPulumiRunFunc, prog.Name)
 		}
 
@@ -157,7 +156,6 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 
 		autoStk, err := auto.UpsertStackLocalSource(ctx, fqsn, workdir, auto.Program(program))
 		if err != nil {
-			fmt.Println("how about this")
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -168,6 +166,47 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 	}
 
 	return stkMap
+}
+
+func parseArgs() (string, string) {
+	args := os.Args[1:]
+	apps := fmt.Sprintf("[%s|%s]", Kube, Infra)
+	actionStr := "[deploy|destroy|preview]"
+
+	if len(args) != 2 {
+		banner := "Edgecase Apparel Pulumi Programs"
+		syntax := fmt.Sprintf("syntax: prog %s %s\n", apps, actionStr)
+
+		fmt.Printf("\n%s\n--\n%s", banner, syntax)
+		os.Exit(1)
+	}
+
+	// Remove special chars from actionStr, then build slice sub strings
+	stripped := strings.NewReplacer("[", "", "]", "", "|", " ").Replace(actionStr)
+	actions := strings.Fields(stripped)
+
+	// Check args for valid Pulumi action
+	appCmd := args[0]
+	if !slices.Contains(actions, appCmd) {
+		msg := "use one of " + actionStr
+		chkError(errAppAction, msg)
+	}
+
+	// Accept "kube" as an alias to "kubernetes"
+	var appName string
+	if args[1] == "kube" {
+		appName = "kubernetes"
+	} else {
+		appName = args[1]
+	}
+
+	// Check args for valid Pulumi app
+	if appName != Kube && appName != Infra {
+		msg := "use one of " + apps
+		chkError(errAppName, msg)
+	}
+
+	return appCmd, appName
 }
 
 //nolint:err113

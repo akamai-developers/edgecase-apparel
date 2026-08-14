@@ -8,7 +8,6 @@ schema-version = "1.13.0"
 ## -------------------------------------------------------------------
 [install]
 go-tools.pkg-path = "go-tools"
-cmake.pkg-path = "cmake"
 pulumi.pkg-path = "pulumi"
 golangci-lint.pkg-path = "golangci-lint"
 gofumpt.pkg-path = "gofumpt"
@@ -16,6 +15,9 @@ go.pkg-path = "go"
 go.version = "1.26.1"
 adr-tools.pkg-path = "adr-tools"
 pulumi-language-go.pkg-path = "pulumiPackages.pulumi-language-go"
+gnumake.pkg-path = "gnumake"
+age.pkg-path = "age"
+sops.pkg-path = "sops"
 
 
 ## Environment Variables ---------------------------------------------

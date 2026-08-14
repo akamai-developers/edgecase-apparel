@@ -49,8 +49,7 @@ func (infraMocks) Call(args pulumi.MockCallArgs) (resource.PropertyMap, error) {
 }
 
 func TestInfraStackOutputs(t *testing.T) {
-	ts := *new(TestStack)
-	ts.Init("infra")
+	ts := NewTestStack("infra")
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
 		err := app.Deploy(ctx)
@@ -103,8 +102,7 @@ func TestInfraStackOutputs(t *testing.T) {
 }
 
 func TestSetupDns(t *testing.T) {
-	ts := *new(TestStack)
-	ts.Init("infra")
+	ts := NewTestStack("infra")
 
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
 		dns, err := app.SetupDNS(ctx)
