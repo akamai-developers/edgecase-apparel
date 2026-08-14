@@ -4,7 +4,7 @@
 
 [Age](https://github.com/FiloSottile/age) is a vendor agnostic, light weight, asymmetrical file encryption tool. It's often recommended over PGP for being more modern and easier to use. The combination of [SOPS + Age](https://getsops.io/docs/usage/identities/age/) enables a secure way to encrypt configuration secrets and safely commit them to a git repository.
 
-This project uses Age to encrypt the contents of a `.env` file which contains environment variable values used by our [Pulumi](pulumi-iac.md) applications. The ability to safely share these values, reduces the amount of setup in a local development environment. The table below outlines those Edgecase Apparel environment variables which are sourced from this `.env` file. Our `Makefile` targets also rely on them. They are prefixed with `ECA` to distinguish them and avoid collision with other programs, because for example, `${AWS_ACCESS_KEY_ID}` and `${AWS_SECRET_ACCESS_KEY}` are used by pretty much anything that interacts with Object Storage via the AWS SDK.
+This project uses Age to encrypt the contents of a `.env` file which contains environment variable values used by our [Pulumi](pulumi-iac.md) applications. They are prefixed with `ECA` to distinguish them and avoid collision with other programs, because for example, `${AWS_ACCESS_KEY_ID}` and `${AWS_SECRET_ACCESS_KEY}` are used by pretty much anything that interacts with Object Storage via the AWS SDK. The table below outlines those Edgecase Apparel environment variables which are sourced from `.env`.
 
 | Key                      |  Value                      |
 | ------------------------ | --------------------------- |
@@ -14,7 +14,7 @@ This project uses Age to encrypt the contents of a `.env` file which contains en
 | ECA_LINODE_TOKEN         | ${LINODE_TOKEN}             |
 
 > [!NOTE]
-> The `.env` itself is _not_ required for our setup, however the environment variables it sets _are_ required. You can do without the `.env` file by instead exporting the named `ECA` environment variables in your shell profile. For example, you could append the following to `$HOME/.bashrc`:
+> You can also just put the `ECA` environment variables in your shell profile (`~/.bashrc`, `~/.zshrc`):
 >
 > ```bash
 > export ECA_PULUMI_CONFIG_SECRET=<PULUMI_CONFIG_PASSPHRASE>
