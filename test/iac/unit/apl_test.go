@@ -134,7 +134,7 @@ func TestDeployApl(t *testing.T) {
 					wants = domain
 					assert.Containsf(t, got, wants, "missing or invalid value for %s.%s: %v", i, key, urn)
 				case "dns":
-					// Test ExtenalDNS domain filter
+					// Test externalDNS domain filter
 					key := "domainFilters"
 					got := submap[key]
 					assert.Containsf(t, got, domain, "missing or invalid values for %s.%s: %v", i, key, urn)

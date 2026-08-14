@@ -16,4 +16,4 @@ We have created a sub `Makefile` in the `tests` directory, which groups tasks an
 
 ## Consequences
 
-Each additonal `Makefile` can introduce more back and forth navigation between directories when making large refactoring changes, but ultimately keeps cleanliness.
+Each additional `Makefile` can introduce more back and forth navigation between directories when making large refactoring changes, but ultimately keeps cleanliness.

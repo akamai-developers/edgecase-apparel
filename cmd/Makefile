@@ -27,10 +27,6 @@ infra-linode-token:
 	cd ./infra && pulumi config set linode:token $(ECA_LINODE_TOKEN) --secret
 
 rotate-linode-token: infra-linode-token kube-linode-token 
-# 	cd ./kubernetes && pulumi config set linode:token $(ECA_LINODE_TOKEN) --secret
-# rotate-kube-secret:
-# 	echo $(AWS_ACCESS_KEY_ID)
-# 	cd ./kubernetes && pulumi stack change-secrets-provider passphrase
 	
 preview:
 	$(AUTO_RUN) "preview" $(APP)
@@ -40,21 +36,3 @@ deploy:
 
 destroy:
 	$(AUTO_RUN) "destroy" $(APP)
-
-# preview-kube:
-# 	$(AUTO_RUN) preview-kube
-
-# deploy-kube:
-# 	$(AUTO_RUN) deploy-kube
-
-# destroy-kube:
-# 	$(AUTO_RUN) destroy-kube
-
-# preview-infra:
-# 	$(AUTO_RUN) preview-infra
-
-# deploy-infra:
-# 	$(AUTO_RUN) deploy-infra
-
-# destroy-infra:
-# 	$(AUTO_RUN) destroy-infra

@@ -23,6 +23,3 @@ go-fmt:
 	@gofmt -l -w ./cmd
 	@gofmt -l -w ./test
 	@gofumpt -l -w ./cmd ./test
-	
-test-mate:
-	$(MAKE) -C ./test/iac test-var
