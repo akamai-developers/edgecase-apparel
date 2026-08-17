@@ -1,23 +1,46 @@
 package app
 
 import (
-	utils "github.com/akamai-developers/edgecase-apparel/internal"
+	"errors"
+	"fmt"
+	"reflect"
 
+	cfg "github.com/akamai-developers/edgecase-apparel/cmd/config"
+	utils "github.com/akamai-developers/edgecase-apparel/internal"
 	"github.com/pulumi/pulumi-linode/sdk/v5/go/linode"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-var stackOutputMap = pulumi.Map{}
+var (
+	// stackOutputMap is a Pulumi map for exporting Pulumi stack outputs.
+	stackOutputMap = pulumi.Map{}
+	errTypeAssert  = errors.New("type assertion failed")
+)
 
+// Deploy is a wrapper around the DeployInfra func, which enables the Pulumi CLI
+// to execute the program independently of the Automation API.
 func Deploy(ctx *pulumi.Context) error {
+	if err := DeployInfra(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeployInfra is the core Pulumi program that deploys the project cloud
+// infrastructure components. It is the parent to functions that deploy and
+// manage DNS, and Object Storage buckets and keys.
+//
+//nolint:funlen
+func DeployInfra(ctx *pulumi.Context) error {
 	// Get Viper configs
-	if err := InitConfig(); err != nil {
+	if err := cfg.InitConfig(); err != nil {
 		return err
 	}
 
 	var (
-		lke LkeConfig
-		apl NodePoolConfig
+		lke cfg.LkeConfig
+		apl cfg.NodePoolConfig
 	)
 
 	if err := lke.Get("primary"); err != nil {
@@ -29,6 +52,25 @@ func Deploy(ctx *pulumi.Context) error {
 	}
 
 	nodeLabels := apl.MapLabels()
+
+	// Setup DNS zone
+	domainResources, err := SetupDNS(ctx)
+	if err != nil {
+		return err
+	}
+
+	domain, ok := domainResources["domain"].(*linode.Domain)
+	if !ok {
+		err := errTypeAssert
+		got := reflect.TypeOf(domainResources["domain"])
+
+		return fmt.Errorf("[ error ] %w: wants *linode.Domain, got %v", err, got)
+	}
+
+	// Provision OBJ buckets
+	if err := SetupObj(ctx); err != nil {
+		return err
+	}
 
 	// Create LKE cluster
 	lkeCluster, err := linode.NewLkeCluster(ctx, lke.Label, &linode.LkeClusterArgs{
@@ -55,13 +97,14 @@ func Deploy(ctx *pulumi.Context) error {
 		},
 		Region: pulumi.String(lke.Region),
 		Tags:   utils.BuildPulumiStringArray(lke.Tags),
-	})
+	}, pulumi.DependsOn([]pulumi.Resource{domain}))
 	if err != nil {
 		return err
 	}
 
-	stackOutputMap["lke_id"] = lkeCluster.ID()
-	stackOutputMap["lke_label"] = lkeCluster.Label
+	stackOutputMap["lkeId"] = lkeCluster.ID()
+	stackOutputMap["lkeLabel"] = lkeCluster.Label
+	stackOutputMap["kubeconfig"] = lkeCluster.Kubeconfig
 
 	ctx.Export("primary", stackOutputMap)
 

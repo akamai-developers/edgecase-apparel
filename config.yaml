@@ -1,4 +1,33 @@
 # Edgecase Apparel config file
+defaults:
+  - &domain edgecase-apparel.app
+  - &primaryregion us-mia
+  - &stack dev
+
+pulumi:
+  - name: infra
+    project: edgecase-apparel-infra
+    stackCtx: *stack
+  - name: kubernetes
+    project: edgecase-apparel-kubernetes
+    stackCtx: *stack
+  # projects:
+  #   - name: kubernetes-dev
+  #     project:  organization/edgecase-apparel-kubernetes
+  #     stack: *stack
+  #   - name: infra-dev
+  #     project: organization/
+  #     stack: *stack
+
+# dns
+dns:
+  domain: *domain
+  soa: devrel@akamai.com
+  type: master
+  ttlSec: 30
+  tags:
+    - ec-apparel
+    - root-dns
 
 # K8s node pools
 nodePools:
@@ -36,7 +65,7 @@ lkeClusters:
       highAvailability: true
     k8sVersion: "1.35"
     label: edgecase-apparel-main
-    region: us-mia
+    region: *primaryregion
     tags:
       - ec-apparel
       - prod
@@ -51,5 +80,24 @@ lkeClusters:
 #     - ec-apparel
 #     - test
 #     - dev
+
+appPlatform:
+  name: apl-core # name of pulumi resource
+  platformName: edgecase-apparel-platform
+  domain: *domain
+  chart: "apl"
+  obj:
+    prefix: "ec-apl"
+    buckets:
+      - loki
+      - cnpg
+      - harbor
+      - thanos
+      - tempo
+      - gitea
+  repo: https://linode.github.io/apl-core
+  region: *primaryregion
+  valuesTpl: apl-core.tpl
+  version: 6.0.0
 
 # more configs go here...

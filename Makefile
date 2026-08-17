@@ -1,18 +1,25 @@
-PULUMI_CONFIG_PASSPHRASE = ${ECA_PULUMI_CONFIG_SECRET}
-AWS_ACCESS_KEY_ID = ${ECA_OBJ_ACCESS_KEY}
-AWS_SECRET_ACCESS_KEY = ${ECA_OBJ_SECRET_KEY}
+# Root makefile
 
-preview-infra:
-	@cd ./cmd/infra && pulumi preview
+-include .env
 
-deploy-infra:
-	@cd ./cmd/infra && pulumi up --yes
+preview:
+	$(MAKE) -C ./cmd preview $(APP)
+
+deploy:
+	$(MAKE) -C ./cmd deploy $(APP)
+
+destroy:
+	$(MAKE) -C ./cmd destroy $(APP)
 
 test-infra:
-	@cd ./test/ && go test -v .
+	$(MAKE) -C ./test/iac test-unit
 
 go-lint:
-	@golangci-lint run
+	@GOLANGCI_LINT_CACHE=$(mktemp -d) && \
+	  golangci-lint fmt && \
+	  golangci-lint run
 
 go-fmt:
+	@gofmt -l -w ./cmd
+	@gofmt -l -w ./test
 	@gofumpt -l -w ./cmd ./test
