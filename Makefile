@@ -3,13 +3,13 @@
 -include .env
 
 preview:
-	$(MAKE) -C ./cmd preview $(APP)
+	$(MAKE) -C ./cmd preview
 
 deploy:
-	$(MAKE) -C ./cmd deploy $(APP)
+	$(MAKE) -C ./cmd deploy
 
 destroy:
-	$(MAKE) -C ./cmd destroy $(APP)
+	$(MAKE) -C ./cmd destroy
 
 test-infra:
 	$(MAKE) -C ./test/iac test-unit

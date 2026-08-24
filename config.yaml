@@ -98,6 +98,6 @@ appPlatform:
   repo: https://linode.github.io/apl-core
   region: *primaryregion
   valuesTpl: apl-core.tpl
-  version: 6.0.0
+  version: 6.2.1
 
 # more configs go here...
