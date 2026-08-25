@@ -27,7 +27,7 @@ infra-linode-token:
 	cd ./infra && pulumi config set linode:token $(ECA_LINODE_TOKEN) --secret
 
 rotate-linode-token: infra-linode-token kube-linode-token 
-	
+
 preview:
 	$(AUTO_RUN) "preview" $(APP)
 

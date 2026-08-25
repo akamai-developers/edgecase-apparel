@@ -99,6 +99,7 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		ValueYamlFiles: pulumi.AssetOrArchiveArray{
 			pulumi.NewStringAsset(values),
 		},
+		Version:     pulumi.StringPtr(apl.Version),
 		WaitForJobs: pulumi.Bool(true),
 	}, pulumi.Provider(k8sProvider), pulumi.DeletedWith(k8sProvider))
 	if err != nil {
