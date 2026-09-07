@@ -176,7 +176,7 @@ func NewKubeSecrets(ctx *pulumi.Context, name string, args *KubeSecretsArgs,
 	return &resource, nil
 }
 
-// getConfigMap utilizes the Kubernetes core/v1 Get() method for fetching configmaps
+// getConfigMap utilizes the Kubernetes core/v1 Get() method for fetching configmaps.
 func getConfigMap(ctx *pulumi.Context, obj GetConfigMapSecret) (*corev1.ConfigMap, error) {
 	id := fmt.Sprintf("%s/%s", obj.Namespace, obj.Name)
 
@@ -190,7 +190,7 @@ func getConfigMap(ctx *pulumi.Context, obj GetConfigMapSecret) (*corev1.ConfigMa
 	return configMap, nil
 }
 
-// getSecret utilizes the Kubernetes core/v1 Get() method for fetching secrets
+// getSecret utilizes the Kubernetes core/v1 Get() method for fetching secrets.
 func getSecret(ctx *pulumi.Context, obj GetConfigMapSecret) (*corev1.Secret, error) {
 	id := fmt.Sprintf("%s/%s", obj.Namespace, obj.Name)
 
