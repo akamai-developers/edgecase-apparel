@@ -2,12 +2,14 @@ package config
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"maps"
+	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
@@ -32,8 +34,9 @@ type PulumiConfigs struct {
 // AplConfig receives config file values which are required for APL helm chart
 // parameters and values.yaml file overrides.
 type AplConfig struct {
-	Chart        string `mapstructure:"chart,omitempty"`
-	Domain       string `mapstructure:"domain,omitempty"`
+	Chart  string `mapstructure:"chart,omitempty"`
+	Domain string `mapstructure:"domain,omitempty"`
+	// Kubeconfig   string `mapstructure:"kubeconfig,omitempty"`
 	Name         string `mapstructure:"name,omitempty"`
 	PlatformName string `mapstructure:"platformName,omitempty"`
 	Repo         string `mapstructure:"repo,omitempty"`
@@ -100,7 +103,15 @@ type HelmConf interface {
 	*AplConfig
 }
 
+type Kubeconfig struct {
+	Config string
+	Data   map[string]any
+	Name   string
+}
+
 // Get retrieves an exported value from a Pulumi stack reference.
+//
+//nolint:ireturn
 func (s *StackRef) Get(key string) (any, error) {
 	info, err := s.Stack.GetOutputDetails(key)
 	if err != nil {
@@ -191,22 +202,18 @@ func (s *StackRef) GetObj() (map[string]any, error) {
 	return opts, nil
 }
 
-// GetKubeConfig fetches the base64 string value of the LKE clsuter kubeconfig
+// GetKubeConfig fetches the base64 string value of the LKE cluster kubeconfig
 // from an exported Pulumi stack reference, and returns a map[string]any value.
-func (s *StackRef) GetKubeConfig(key string) (map[string]any, error) {
-	data, err := s.Get(key)
-	if err != nil {
-		return nil, err
-	}
+func (s *StackRef) GetKubeConfig(key string) *Kubeconfig {
+	return getKubeConfig(s, key)
+}
 
-	cluster, ok := data.(map[string]any)
-	if !ok {
-		err := errors.New("[ error ] invalid cluster reference type")
+func (k *Kubeconfig) Decode() *Kubeconfig {
+	return decodeKubeconfig(k)
+}
 
-		return nil, err
-	}
-
-	return cluster, nil
+func (k *Kubeconfig) Write() *Kubeconfig {
+	return writeKubeconfig(k)
 }
 
 // StackRefInit initializes a Pulumi stack reference for a given stack name.
@@ -244,10 +251,13 @@ func StackRefInit(ctx *pulumi.Context, stack string) (*StackRef, error) {
 	return &stkRef, nil
 }
 
-// RandInitPass is a function for generating random UUID strings as placeholder
-// values where needed in Go templates.
+// RandInitPass is a function for generating random 40 character passwords.
 func RandInitPass() string {
-	return uuid.NewString()
+	str := uuid.NewString()
+	enc := base64.StdEncoding.EncodeToString([]byte(str))
+	pass := []rune(enc)
+
+	return string(pass[:40])
 }
 
 // InitConfig is a function imported from the Viper library that reads in values
@@ -256,7 +266,7 @@ func RandInitPass() string {
 func InitConfig() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	// viper.AddConfigPath(".")
+	// viper.AddConfigPath("../../")
 
 	// Get absolute path to project root
 	projRoot, err := GetProjRoot("InitConfig()")
@@ -266,6 +276,12 @@ func InitConfig() error {
 
 	// Add project root to config path
 	viper.AddConfigPath(projRoot)
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	return err
+	// }
+	// path := filepath.Join("../", cwd)
+	// viper.AddConfigPath(path)
 
 	// Look for environment variables prefixed with "ECA"
 	viper.SetEnvPrefix("eca")
@@ -291,15 +307,89 @@ func InitConfig() error {
 
 // GetProjRoot returns the relative path of the project root.
 func GetProjRoot(funcName string) (string, error) {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return "", fmt.Errorf("%s func error: runtime caller failed to get source file path", funcName)
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
 	}
 
-	dir := filepath.Dir(filename)
-	projRoot := filepath.Join(dir, "..", "..")
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
 
-	return projRoot, nil
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir, nil
+		}
+
+		// Move up one directory level unti reaching root.
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errGetProjRoot
+		}
+
+		dir = parent
+	}
+}
+
+func getKubeConfig(stkref *StackRef, key string) *Kubeconfig {
+	if key != "primary" && key != "backup" {
+		log.Fatal(errInvalidKey)
+	}
+
+	val, err := stkref.Get(key)
+	if err != nil {
+		log.Fatal(errStkRefNoValue)
+	}
+
+	data, ok := val.(map[string]any)
+	if !ok {
+		log.Fatal(errStkRefType)
+	}
+
+	label := fmt.Sprintf("lkeClusters.%s.label", key)
+	name := viper.GetString(label)
+
+	kubecfg := &Kubeconfig{
+		Data: data,
+		Name: name + "-kubeconfig.yaml",
+	}
+
+	return kubecfg
+}
+
+func decodeKubeconfig(kubecfg *Kubeconfig) *Kubeconfig {
+	enc, ok := kubecfg.Data["kubeconfig"].(string)
+	if !ok {
+		log.Fatal(errKubeConfig)
+	}
+
+	kubeconfig, err := base64.StdEncoding.DecodeString(enc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	kubecfg.Config = string(kubeconfig)
+
+	return kubecfg
+}
+
+func writeKubeconfig(kubecfg *Kubeconfig) *Kubeconfig {
+	home := os.Getenv("HOME")
+	dir := home + "/.kube/config"
+
+	// Wrapping dir in filepath.Clean() sanitizes path from directory traversal.
+	if err := os.MkdirAll(filepath.Clean(dir), 0o750); err != nil {
+		log.Printf("non-fatal error: %v", err)
+	}
+
+	path := filepath.Join(dir, kubecfg.Name)
+
+	err := os.WriteFile(filepath.Clean(path), []byte(kubecfg.Config), 0o600)
+	if err != nil {
+		log.Printf("non-fatal error: %v", err)
+	}
+
+	return kubecfg
 }
 
 // helmTemplate is a generic function constrained to types that satisfy the

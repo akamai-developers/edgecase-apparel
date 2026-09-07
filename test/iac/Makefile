@@ -1,7 +1,9 @@
 TEST_STACK := dev
 
 ECA_LINODE_TOKEN := 55772f00-85e0-11f1-85a5-b3f1d391c9f3
+ECA_KEYCLOAK_ADMIN_PASS := NDlhZWUxZjYtYTdlOS0xMWYxLThmYmEtN2JlOWQz
 export ECA_LINODE_TOKEN
+export ECA_KEYCLOAK_ADMIN_PASS
 
 # APL stack test vars
 ECA_APL_PROJECT := edgecase-apparel-kubernetes

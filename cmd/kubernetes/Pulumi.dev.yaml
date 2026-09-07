@@ -1,4 +1,5 @@
-encryptionsalt: v1:omXwDygr6h4=:v1:Iee/Zh9zwOTUtDG3:EIeNZ1xx0oPAB+iHGsZp6maxdrkAVg==
+encryptionsalt: v1:bh0XFYACAAQ=:v1:HmfOiYbVdcrkv7W3:5J8NxKqAW5zTqFMrRc/jYcddR8TnJA==
 config:
   linode:token:
-    secure: v1:4uqiIb6E5n8J92+7:pYw05iVc9hC6pETk8AfZXdygCFBMx0+fpPV9qYaXbQipra/nrOhEv0gpvuhn0Jo2brx9xePFxpfxWSxMa+hrROdiGaJTUn1qtw/3COUNhOM=
+    secure: v1:SnSx9hV/mflLAIL9:+U02WphVF/F0XMhqGJF2o1qRz2l6GLSStN6rhEnl5k6THubKStfp1cdO3xC1IZFi6UhuwDFnuTdhWz/mWz9Ifj3dxJ10eeevIDwRy0HbuAs=
+  edgecase-apparel-kubernetes:kubeSecrets: "true"
