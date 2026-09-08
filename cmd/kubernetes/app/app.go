@@ -88,8 +88,6 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 		return nil, err
 	}
 
-	// var opt = pulumi.ResourceOption{}
-
 	// Deploy APL Helm chart
 	opts := []pulumi.ResourceOption{
 		pulumi.Provider(k8sProvider),
@@ -157,37 +155,6 @@ func DeployApl(ctx *pulumi.Context) (*helm.Release, error) {
 	adminLogin := []KubeConfigMapSecret[*corev1.Secret]{
 		{Keys: []string{"username", "password"}, Name: secretName, Namespace: "keycloak"},
 	}
-
-	// hook, err := ctx.RegisterResourceHook("installerCheck", configMapCheck, nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// hook, err := ctx.RegisterErrorHook(
-	// 	"retryInitAdminCreds",
-	// 	func(args *pulumi.ErrorHookArgs) (bool, error) {
-	// 		latest := ""
-	// 		if len(args.Errors) > 0 {
-	// 			latest = args.Errors[0]
-	// 			msg := fmt.Sprintf("\n\n\nTHE ERROR IS: %v\n\n\n", latest)
-	// 			fmt.Println(msg)
-	// 			ctx.Log.Debug(msg, nil)
-	// 		}
-
-	// 		if !strings.Contains(latest, "does not exist") {
-	// 			return false, nil
-	// 		}
-
-	// 		time.Sleep(30 * time.Second)
-	// 		return true, nil
-	// 	},
-	// )
-	// if err != nil {
-	// 	// msg := fmt.Sprintf("\n\n\nTHE ERROR IS: %v\n\n\n", err)
-	// 	// fmt.Println(msg)
-	// 	// ctx.Log.Debug(msg, nil)
-	// 	return nil, err
-	// }
 
 	initCreds, err := DeployNewKubeSecrets(ctx, "initAdminCreds", &KubeSecretsArgs{
 		ConfigMaps: consoleUrl,
