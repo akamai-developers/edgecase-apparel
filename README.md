@@ -1,4 +1,5 @@
 # Edgecase Apparel
+[![CI](https://github.com/akamai-developers/edgecase-apparel/actions/workflows/ci.yaml/badge.svg)](https://github.com/akamai-developers/edgecase-apparel/actions/workflows/ci.yaml)
 
 ![architecture](./images/architecture.jpg)
 
