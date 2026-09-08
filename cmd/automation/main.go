@@ -46,40 +46,19 @@ type PulumiAutoOpts struct {
 	UpOpts      []optup.Option
 }
 
-func (p PulumiAutoStack) Preview(ctx context.Context, opts ...optpreview.Option) auto.PreviewResult {
-	o := p.Opts.PreviewOpts
-	if len(opts) > 0 {
-		o = append(o, opts...)
-	}
-
-	res, err := p.Stack.Preview(ctx, o...)
-	chkError(err, "failed pulumi preview")
-
-	return res
-}
-
+// Deploy action provisions the Pulumi stack.
 func (p PulumiAutoStack) Deploy(ctx context.Context, opts ...optup.Option) auto.UpResult {
-	o := p.Opts.UpOpts
-	if len(opts) > 0 {
-		o = append(o, opts...)
-	}
-
-	res, err := p.Stack.Up(ctx, o...)
-	chkError(err, "failed pulumi deploy")
-
-	return res
+	return deploy(ctx, p, opts...)
 }
 
+// Destroy action tears down the Pulumi stack.
 func (p PulumiAutoStack) Destroy(ctx context.Context, opts ...optdestroy.Option) auto.DestroyResult {
-	o := p.Opts.DestroyOpts
-	if len(opts) > 0 {
-		o = append(o, opts...)
-	}
+	return destroy(ctx, p, opts...)
+}
 
-	res, err := p.Stack.Destroy(ctx, o...)
-	chkError(err, "failed pulumi destroy")
-
-	return res
+// Preview action shows what Pulumi resources will change from a Deploy or Destroy action.
+func (p PulumiAutoStack) Preview(ctx context.Context, opts ...optpreview.Option) auto.PreviewResult {
+	return preview(ctx, p, opts...)
 }
 
 func main() {
@@ -111,6 +90,8 @@ func main() {
 	}
 }
 
+// InitStacks parses config file for Pulumi stacks and initializes them with
+// Pulumi Automation API.
 func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap {
 	stkMap := PulumiAutoStackMap{}
 
@@ -128,21 +109,21 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 				optdestroy.ProgressStreams(os.Stdout),
 				optdestroy.ErrorProgressStreams(os.Stderr),
 				optdestroy.Parallel(1),
-				// optdestroy.Refresh(),
+				optdestroy.Refresh(),
 			},
 			PreviewOpts: []optpreview.Option{
 				optpreview.Color("always"),
 				optpreview.ProgressStreams(os.Stdout),
 				optpreview.ErrorProgressStreams(os.Stderr),
 				optpreview.Parallel(1),
-				// optpreview.Refresh(),
+				optpreview.Refresh(),
 			},
 			UpOpts: []optup.Option{
 				optup.Color("always"),
 				optup.ProgressStreams(os.Stdout),
 				optup.ErrorProgressStreams(os.Stderr),
 				optup.Parallel(1),
-				// optup.Refresh(),
+				optup.Refresh(),
 			},
 		}
 
@@ -154,6 +135,7 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 		program := stkFuncs[prog.Name]
 		workdir := filepath.Join("..", prog.Name)
 
+		// Load stack and setup its environment.
 		autoStk, err := auto.UpsertStackLocalSource(ctx, fqsn, workdir, auto.Program(program))
 		if err != nil {
 			fmt.Println(err)
@@ -168,6 +150,51 @@ func InitStacks(ctx context.Context, confs cfg.PulumiConfigs) PulumiAutoStackMap
 	return stkMap
 }
 
+func deploy(ctx context.Context, p PulumiAutoStack, opts ...optup.Option) auto.UpResult {
+	o := p.Opts.UpOpts
+	if len(opts) > 0 {
+		o = append(o, opts...)
+	}
+
+	res, err := p.Stack.Up(ctx, o...)
+	chkError(err, "failed pulumi deploy")
+
+	if strings.Contains(p.Stack.Name(), "kubernetes") {
+		err := p.Stack.SetConfig(ctx, "kubeSecrets", auto.ConfigValue{
+			Value:  "true",
+			Secret: false,
+		})
+		chkError(err, "failed setting kubeSecrets in stack config")
+	}
+
+	return res
+}
+
+func destroy(ctx context.Context, p PulumiAutoStack, opts ...optdestroy.Option) auto.DestroyResult {
+	o := p.Opts.DestroyOpts
+	if len(opts) > 0 {
+		o = append(o, opts...)
+	}
+
+	res, err := p.Stack.Destroy(ctx, o...)
+	chkError(err, "failed pulumi destroy")
+
+	return res
+}
+
+func preview(ctx context.Context, p PulumiAutoStack, opts ...optpreview.Option) auto.PreviewResult {
+	o := p.Opts.PreviewOpts
+	if len(opts) > 0 {
+		o = append(o, opts...)
+	}
+
+	res, err := p.Stack.Preview(ctx, o...)
+	chkError(err, "failed pulumi preview")
+
+	return res
+}
+
+// parseArgs validates arguments coming from Makefile or command line.
 func parseArgs() (string, string) {
 	args := os.Args[1:]
 	apps := fmt.Sprintf("[%s|%s]", Kube, Infra)

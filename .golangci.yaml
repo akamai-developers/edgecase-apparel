@@ -117,6 +117,16 @@ linters:
     - wsl_v5
     - zerologlint
   settings:
+    ireturn:
+      allow:
+        - error
+        - pulumi.Output
+        - KubeSecrets
+        - corev1.ConfigMap
+        - corev1.SecretState
+        - corev1.Secret
+        - helm.Release
+        - resource.PropertyMap
     revive:
       confidence: 1.0
       # enable-all-rules: false
@@ -138,8 +148,10 @@ linters:
       ignore-chan-recv-ok: true
       ignore-names:
         - id
+        - ok
       ignore-decls:
         - i objLabels []string
+        - p PulumiAutoStack
         # - i []struct
     wsl_v5:
       allow-first-in-block: true
@@ -150,14 +162,22 @@ linters:
       - linters:
           - staticcheck
         text: "ST1005:"
+      - linters:
+        - forcetypeassert
+        text: "pulumi"
+      - path: unit/base.go
+        text: "G101"
+        linters:
+          - gosec
     paths:
       - unit/base.go
 formatters:
   enable:
-    - gci
-    - gofmt
+    # - gci
+    # - gofmt
     - gofumpt
     - goimports
 run:
+  concurrency: 2
   tests: false
   timeout: 5m

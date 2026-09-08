@@ -18,17 +18,11 @@ func (aplMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prop
 	if args.TypeToken == "pulumi:pulumi:StackReference" {
 		outputs := resource.NewPropertyMapFromMap(map[string]interface{}{
 			"apl": map[string]any{
-				"aplId":         aplId,
-				"aplLint":       aplLint,
-				"aplName":       aplName,
-				"aplRepo":       aplRepo,
-				"aplStatus":     aplStatus,
-				"k8sProviderId": k8sProviderId,
+				"chart":        aplRepo,
+				"initialAdmin": intitAdmin,
+				"status":       aplStatus,
 			},
-			"obj": map[string]any{
-				"accessKey": accessKey,
-				"secretKey": secretKey,
-			},
+			"obj":        objKeys,
 			"objBuckets": objBuckets,
 			"primary": map[string]any{
 				"kubeconfig": kubeconfig,
@@ -47,7 +41,6 @@ func (aplMocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prop
 }
 
 func (aplMocks) Call(args pulumi.MockCallArgs) (resource.PropertyMap, error) {
-	// args.Args.HasValue()
 	return args.Args, nil
 }
 
@@ -70,13 +63,23 @@ func TestDeployApl(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			// Test output values
 			if values, ok := outputs.Value.(map[string]any); ok {
-				assert.Equal(t, aplId, values["aplId"])
-				assert.Equal(t, aplLint, values["aplLint"])
-				assert.Equal(t, aplName, values["aplName"])
-				assert.Equal(t, aplRepo, values["aplRepo"])
-				assert.Equal(t, aplStatus, values["aplStatus"])
-				assert.Equal(t, k8sProviderId, values["k8sProviderId"])
+				assert.Equal(t, aplRepo, values["chart"])
+				assert.MapContainsT(t, values, "initialAdmin")
+				assert.MapContainsT(t, values, "status")
+
+				initAdminOutputs := values["initialAdmin"].(map[string]any)
+				assert.MapEqualT(t, initAdminOutputs, intitAdmin)
+
+				statusOutputs := values["status"].(map[string]any)
+				for key := range aplStatus {
+					assert.MapContainsT(t, statusOutputs, key)
+				}
+
+				for k, v := range statusOutputs {
+					assert.Equal(t, aplStatus[k], v)
+				}
 			} else {
 				t.Error("error: invalid type returned from stack reference")
 			}
@@ -112,7 +115,12 @@ func TestDeployApl(t *testing.T) {
 
 			// Test correctness of values populated by template variables
 			for _, i := range gotKeys {
-				submap := data[i].(map[string]any)
+				var submap map[string]any
+				if val, ok := data[i].(map[string]any); !ok {
+					continue
+				} else {
+					submap = val
+				}
 				switch i {
 				case "app":
 					// Test cert-manager domain email

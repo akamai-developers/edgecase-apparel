@@ -89,12 +89,11 @@ appPlatform:
   obj:
     prefix: "ec-apl"
     buckets:
-      - loki
       - cnpg
-      - harbor
-      - thanos
-      - tempo
       - gitea
+      - harbor
+      - kubeflow-pipelines
+      - loki
   repo: https://linode.github.io/apl-core
   region: *primaryregion
   valuesTpl: apl-core.tpl
